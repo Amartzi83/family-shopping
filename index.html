@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1e293b">
+<title>קניות משפחתיות</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- =====================================================
+     🔥 Firebase — הכנס את ה-Config שלך מ-Firebase Console
+     ===================================================== -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;-webkit-tap-highlight-color:transparent}
+body{font-family:'Rubik',sans-serif;background:#fafaf9;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased}
+input:focus,textarea:focus{outline:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-appearance:none}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(60px)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes modalIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+#loading{display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;gap:12px}
+#loading .icon{font-size:36px;animation:pulse 1.5s infinite}
+#loading .text{font-size:13px;color:#94a3b8}
+
+.header{background:linear-gradient(135deg,#1e293b,#334155);padding:22px 18px 14px;color:white}
+.header h1{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.header-top{display:flex;justify-content:space-between;align-items:center}
+.header-btns{display:flex;gap:5px}
+.header-btn{background:rgba(255,255,255,.08);color:white;border-radius:9px;padding:6px 9px;font-size:12px;transition:all .2s}
+.header-btn.active{background:rgba(255,255,255,.25)}
+.members-row{display:flex;gap:6px;margin-top:12px}
+.member-btn{border-radius:20px;padding:5px 14px;font-size:13px;transition:all .2s;border:1.5px solid transparent}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-left:5px;vertical-align:middle}
+.sync-dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e88}
+.sync-dot.off{background:#ef4444}
+
+.panel{background:white;margin:10px 16px;border-radius:13px;padding:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);animation:fadeIn .25s}
+
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:11px 16px 0}
+.tab-btn{border-radius:10px;padding:8px 2px;font-size:10px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:all .2s;text-align:center;line-height:1.3;background:white;color:#64748b}
+.tab-btn.active{color:white}
+.tab-icon{font-size:17px;margin-bottom:1px}
+
+.info-bar{margin:9px 16px 0;padding:7px 11px;border-radius:8px;font-size:10px;color:#64748b;display:flex;justify-content:space-between;align-items:center}
+
+.add-section{padding:9px 16px 4px}
+.add-row{display:flex;gap:6px}
+.add-input{flex:1;border-radius:10px;padding:9px 13px;font-size:14px;font-family:inherit}
+.add-btn{color:white;border-radius:10px;padding:0 15px;font-size:20px;font-weight:300}
+.qty-row{display:flex;gap:5px;margin-top:5px;align-items:center}
+.qty-box{display:flex;align-items:center;gap:3px;background:white;border-radius:8px;border:1.5px solid #e2e8f0;padding:0 8px}
+.qty-label{font-size:10px;color:#94a3b8}
+.qty-input{width:34px;border:none;font-size:13px;font-weight:600;text-align:center;font-family:inherit;padding:6px 0;background:transparent}
+.unit-btn{border-radius:7px;padding:5px 8px;font-size:10px;font-weight:500;border:1.5px solid #e2e8f0;transition:all .15s;background:white;color:#64748b}
+.unit-btn.active{border:none;color:white}
+.note-input{width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 11px;font-size:12px;font-family:inherit;color:#475569;margin-top:5px}
+
+.items-list{padding:3px 16px 90px}
+.empty-state{text-align:center;padding:32px 20px;color:#cbd5e1}
+.empty-icon{font-size:40px;margin-bottom:4px}
+.group-header{font-size:11px;font-weight:600;color:#94a3b8;padding:10px 2px 4px;border-bottom:1px solid #f1f5f9;margin-bottom:3px}
+
+.item-row{display:flex;align-items:center;gap:7px;border-radius:10px;padding:9px 10px;margin-bottom:4px;animation:slideIn .22s ease both;transition:all .2s}
+.item-row.vlong{padding:10px 10px 8px;flex-wrap:wrap}
+.item-row.removing{animation:slideOut .4s ease forwards}
+.check-btn{width:26px;height:26px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.item-name{font-size:14px;font-weight:500;color:#1e293b}
+.item-by{font-size:9px;margin-top:1px}
+.qty-badge{background:white;border-radius:7px;padding:2px 9px;font-size:13px;font-weight:600;color:#334155;display:flex;align-items:center;gap:2px;transition:all .15s}
+.qty-badge-unit{font-size:9px;font-weight:400;color:#94a3b8}
+.qty-edit{width:34px;border-radius:6px;padding:2px;font-size:13px;font-weight:600;text-align:center;font-family:inherit}
+.del-btn{opacity:.15;color:#ef4444;font-size:14px;padding:2px;transition:opacity .2s}
+.item-row:hover .del-btn{opacity:1}
+@media(hover:none){.del-btn{opacity:.4}}
+.note-row{width:100%;padding-right:33px;margin-top:3px}
+
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9}
+.hist-total{background:#f0fdf4;color:#16a34a;border-radius:18px;padding:2px 10px;font-size:12px;font-weight:600}
+.export-panel{display:flex;gap:8px}
+.export-btn{flex:1;border-radius:10px;padding:10px;font-size:13px;font-weight:600;color:white}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn .2s}
+.modal{background:white;border-radius:18px;padding:22px;width:84%;max-width:330px;animation:modalIn .25s;text-align:center}
+.price-row{display:flex;align-items:center;gap:5px;justify-content:center;margin-bottom:16px}
+.price-input{width:120px;border:2px solid #e2e8f0;border-radius:11px;padding:9px 12px;font-size:19px;font-weight:600;text-align:center;font-family:inherit}
+.modal-btns{display:flex;gap:7px}
+.modal-cancel{flex:1;padding:9px;border-radius:11px;font-size:13px;font-weight:500;background:#f1f5f9;color:#64748b}
+.modal-confirm{flex:1;padding:9px;border-radius:11px;font-size:13px;font-weight:600;background:#22c55e;color:white;box-shadow:0 3px 10px rgba(34,197,94,.3)}
+
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:white;padding:8px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:2000;animation:popIn .3s ease}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="loading"><div class="icon">🛒</div><div class="text">מתחבר...</div></div>
+</div>
+
+<script>
+// ============================================
+// FIREBASE INIT
+// ============================================
+if(typeof firebase==='undefined'){
+  document.getElementById("app").innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:20px;font-family:Rubik,sans-serif;">
+    <div><div style="font-size:48px;margin-bottom:12px;">⚠️</div>
+    <h2 style="font-size:18px;color:#1e293b;margin-bottom:8px;">שגיאת טעינה</h2>
+    <p style="font-size:13px;color:#64748b;">Firebase לא נטען. בדקו חיבור אינטרנט ונסו שוב.</p>
+    <button onclick="location.reload()" style="margin-top:16px;background:#1e293b;color:white;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-family:inherit;cursor:pointer;">🔄 נסה שוב</button></div></div>`;
+  throw new Error("Firebase SDK not loaded");
+}
+const firebaseConfig = {
+  apiKey: "AlzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
+  authDomain: "family-shopping-9f8a6.firebaseapp.com",
+  databaseURL: "https://family-shopping-9f8a6-default-rtdb.firebaseio.com",
+  projectId: "family-shopping-9f8a6",
+  storageBucket: "family-shopping-9f8a6.firebasestorage.app",
+  messagingSenderId: "7886163686",
+  appId: "1:7886163686:web:544391dd14dac18b2ab527"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============================================
+// CONSTANTS
+// ============================================
+const MEMBERS = ["אבא","אמא","גפן","שקד"];
+
+const CATEGORIES = [
+  {id:"short",label:"טווח קצר",icon:"🥛",color:"#22c55e",bg:"#f0fdf4",disappear:true,hasQty:true},
+  {id:"medium",label:"טווח בינוני",icon:"🥩",color:"#f59e0b",bg:"#fffbeb",disappear:true,hasQty:true},
+  {id:"long",label:"טווח ארוך",icon:"🧴",color:"#6366f1",bg:"#eef2ff",disappear:false,hasQty:true},
+  {id:"vlong",label:"טווח ארוך מאוד",icon:"🏷️",color:"#ec4899",bg:"#fdf2f8",disappear:false,hasQty:false},
+  {id:"general",label:"כללי",icon:"📝",color:"#64748b",bg:"#f8fafc",disappear:true,hasQty:false},
+];
+
+const MC = [
+  {bg:"#e8f4f8",border:"#b8dae6",text:"#3a7d99"},
+  {bg:"#fce8ec",border:"#f0b8c4",text:"#b5465a"},
+  {bg:"#eef0e5",border:"#cdd4b3",text:"#6b7a3a"},
+  {bg:"#f3edf7",border:"#d4bfe3",text:"#7d5a9e"},
+];
+
+const SORT_GROUPS = [
+  {label:"🥬 ירקות",kw:["מלפפון","עגבניה","עגבניות","גזר","בצל","פלפל","חסה","כרוב","קישוא","חציל","ברוקולי","תירס","שעועית","אפונה","סלרי","כוסברה","פטרוזיליה","שמיר","בזיליקום","נענע","ירק","ירקות","סלט","צנונית","בטטה","תפוח אדמה","דלעת","אבוקדו","שום","לימון","לימונים","פטריות","רוקט","כרובית","סלק","קולורבי"]},
+  {label:"🍎 פירות",kw:["תפוח","תפוחים","בננה","בננות","תות","תותים","ענב","ענבים","אפרסק","שזיף","אגס","מנגו","אננס","קיווי","אבטיח","מלון","רימון","תמר","תמרים","פירות","קלמנטינה","תפוז","תפוזים","אשכולית","פומלה","דובדבן","נקטרינה","משמש"]},
+  {label:"🍞 יבשים ואפייה",kw:["חטיף","חטיפים","שימור","שימורים","טונה","לחם","פיתה","פיתות","אורז","פסטה","קמח","סוכר","שמן","חומוס","טחינה","במבה","ביסלי","קרקר","עוגיות","שוקולד","ממרח","ריבה","דבש","גרנולה","דגני בוקר","קורנפלקס","שקדים","אגוזים","צנימים","מצות","רוטב","קטשופ","חרדל","מיונז","חומץ","סויה","אטריות","קוסקוס","בורגול","קינואה","עדשים","נוטלה","ממתקים","וופל","קרמבו","עוגה","אבקת אפייה"]},
+  {label:"🧀 מוצרי חלב",kw:["חלב","גבינה","יוגורט","שמנת","קוטג","לבן","שוקו","קשקבל","גאודה","עמק","בולגרית","מוצרלה","ריקוטה","פרמזן","חמאה","מעדן","דנונה","אקטיביה","מילקי","ביצים","ביצה"]},
+  {label:"🥩 בשר ודגים",kw:["בשר","עוף","חזה עוף","שניצל","קציצות","כרעיים","נקניק","נקניקיות","סטייק","בקר","טחון","כבש","הודו","דג","דגים","סלמון","טילפיה","אמנון","פילה","סושי"]},
+];
+
+const UNITS = ["יח׳","ק״ג","ליטר","גרם","חבילה","קרטון"];
+
+// ============================================
+// STATE
+// ============================================
+let S = {
+  lists:{short:[],medium:[],long:[],vlong:[],general:[]},
+  history:[],
+  me: localStorage.getItem("fshop-me") || "",
+  tab:"short",
+  showHist:false, showExp:false,
+  priceModal:null,
+  editQtyId:null, editNoteId:null,
+  connected:false, loaded:false,
+};
+
+let ni="",nq="1",nu="יח׳",nn="",pv="",eqv="",env="";
+
+// ============================================
+// HELPERS
+// ============================================
+const gid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const mc=n=>MC[MEMBERS.indexOf(n)]||MC[0];
+const cat=id=>CATEGORIES.find(c=>c.id===id);
+const fdt=d=>new Date(d).toLocaleDateString("he-IL",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const esc=s=>s?String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"):"";
+
+function sortOrd(n){for(let i=0;i<SORT_GROUPS.length;i++)for(const k of SORT_GROUPS[i].kw)if(n.includes(k))return i;return 2;}
+function sortItems(a){return[...a].sort((x,y)=>sortOrd(x.name)-sortOrd(y.name));}
+
+function exportTxt(items,label,vl){
+  let t=`🛒 *${label}*\n\n`;
+  items.forEach((it,i)=>{
+    if(vl)t+=`${i+1}. ${it.name}${it.note?` (${it.note})`:""}\n`;
+    else{const u=it.unit&&it.unit!=="יח׳"?` ${it.unit}`:"";t+=`${i+1}. ${it.name} — ${it.quantity||1}${u}\n`;}
+  });return t;
+}
+
+// ============================================
+// FIREBASE
+// ============================================
+function fbPush(p,v){db.ref(p).push(v)}
+function fbRemove(p){db.ref(p).remove()}
+function fbUpdate(p,v){db.ref(p).update(v)}
+
+function startListeners(){
+  db.ref("lists").on("value",snap=>{
+    const d=snap.val()||{};
+    S.lists={
+      short:d.short?Object.entries(d.short).map(([k,v])=>({...v,_k:k})):[],
+      medium:d.medium?Object.entries(d.medium).map(([k,v])=>({...v,_k:k})):[],
+      long:d.long?Object.entries(d.long).map(([k,v])=>({...v,_k:k})):[],
+      vlong:d.vlong?Object.entries(d.vlong).map(([k,v])=>({...v,_k:k})):[],
+      general:d.general?Object.entries(d.general).map(([k,v])=>({...v,_k:k})):[],
+    };
+    S.loaded=true;render();
+  });
+  db.ref("history").on("value",snap=>{
+    const d=snap.val()||{};
+    S.history=Object.entries(d).map(([k,v])=>({...v,_k:k})).sort((a,b)=>(b.at||0)-(a.at||0));
+    render();
+  });
+  db.ref(".info/connected").on("value",snap=>{S.connected=snap.val()===true;render();});
+}
+
+// ============================================
+// ACTIONS
+// ============================================
+function pickMe(name){S.me=name;localStorage.setItem("fshop-me",name);render();}
+
+function addItem(){
+  const t=ni.trim();if(!t)return;
+  const c=cat(S.tab);
+  const item={name:t,addedBy:S.me,addedAt:Date.now()};
+  if(c.hasQty){item.quantity=parseFloat(nq)||1;item.unit=nu;}
+  else{if(nn.trim())item.note=nn.trim();}
+  fbPush(`lists/${S.tab}`,item);
+  ni="";nq="1";nu="יח׳";nn="";render();
+  setTimeout(()=>{const el=document.getElementById("add-input");if(el)el.focus();},50);
+}
+
+function rmItem(c,k){fbRemove(`lists/${c}/${k}`);}
+
+function markDone(c,k,itemJson){
+  const item=JSON.parse(itemJson);
+  const ct=cat(c);
+  if(ct.disappear){
+    const el=document.getElementById(`i-${k}`);if(el)el.classList.add("removing");
+    setTimeout(()=>rmItem(c,k),400);
+  }else{
+    S.priceModal={c,k,item};pv="";render();
+    setTimeout(()=>{const el=document.getElementById("pi");if(el)el.focus();},100);
+  }
+}
+
+function confirmBuy(skipPrice){
+  const pm=S.priceModal;if(!pm)return;
+  const p=parseFloat(pv);
+  const hasPrice=!isNaN(p)&&p>0;
+  if(!skipPrice&&!hasPrice)return;
+  const e={name:pm.item.name,category:pm.c,price:hasPrice?p:0,by:S.me,at:Date.now(),addedBy:pm.item.addedBy};
+  if(pm.item.quantity){e.quantity=pm.item.quantity;e.unit=pm.item.unit;}
+  if(pm.item.note)e.note=pm.item.note;
+  fbPush("history",e);rmItem(pm.c,pm.k);
+  S.priceModal=null;pv="";render();
+}
+
+function startEQ(k,q){S.editQtyId=k;eqv=String(q);render();setTimeout(()=>{const el=document.getElementById("eqi");if(el)el.focus();},30);}
+function finishEQ(c,k){fbUpdate(`lists/${c}/${k}`,{quantity:parseFloat(eqv)||1});S.editQtyId=null;render();}
+function startEN(k,n){S.editNoteId=k;env=n||"";render();setTimeout(()=>{const el=document.getElementById("eni");if(el)el.focus();},30);}
+function finishEN(c,k){fbUpdate(`lists/${c}/${k}`,{note:env});S.editNoteId=null;render();}
+
+function ramiLevyTxt(items){
+  return items.map(it=>{
+    const q=(it.quantity&&it.quantity>1)?it.quantity:"";
+    const u=(it.unit&&it.unit!=="יח׳")?it.unit:"";
+    const suffix=[q,u].filter(Boolean).join(" ");
+    return suffix?`${it.name} ${suffix}`:it.name;
+  }).join("\n");
+}
+
+function doExport(m){
+  const c=cat(S.tab);
+  const items=S.tab==="short"?sortItems(S.lists[S.tab]):S.lists[S.tab];
+  if(m==="rami"){
+    // Collect all short+medium items for Rami Levy
+    const all=[...sortItems(S.lists.short),...S.lists.medium];
+    if(all.length===0){toast("❌ אין פריטים לייצוא");S.showExp=false;render();return;}
+    const t=ramiLevyTxt(all);
+    navigator.clipboard.writeText(t).then(()=>toast("✅ הרשימה הועתקה — הדביקו בקניה מהירה ברמי לוי")).catch(()=>{});
+    S.showExp=false;render();return;
+  }
+  const t=exportTxt(items,c.label,S.tab==="vlong"||S.tab==="general");
+  if(m==="wa")window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");
+  else navigator.clipboard.writeText(t).then(()=>toast("✅ הרשימה הועתקה")).catch(()=>{});
+  S.showExp=false;render();
+}
+
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2000);}
+
+function toggleP(p){
+  if(p==="hist"){S.showHist=!S.showHist;S.showExp=false;}
+  if(p==="exp"){S.showExp=!S.showExp;S.showHist=false;}
+  render();
+}
+
+function switchTab(id){S.tab=id;S.showHist=false;S.showExp=false;S.editQtyId=null;S.editNoteId=null;render();}
+
+// ============================================
+// RENDER
+// ============================================
+function render(){
+  const app=document.getElementById("app");
+
+  // Pick who you are (first time only)
+  if(!S.me){
+    app.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#1e293b,#334155);">
+        <div style="text-align:center;animation:popIn .4s ease;">
+          <div style="font-size:52px;margin-bottom:10px;">🛒</div>
+          <h2 style="color:white;font-size:20px;font-weight:700;margin-bottom:4px;">קניות משפחתיות</h2>
+          <p style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:22px;">מי את/ה?</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+            ${MEMBERS.map((m,i)=>`<button onclick="pickMe('${esc(m)}')" style="
+              background:${MC[i].bg};color:${MC[i].text};border:2px solid ${MC[i].border};
+              border-radius:14px;padding:12px 22px;font-size:16px;font-weight:600;font-family:inherit;
+              transition:transform .15s;" onmousedown="this.style.transform='scale(.94)'" onmouseup="this.style.transform=''"
+            >${esc(m)}</button>`).join("")}
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  if(!S.loaded){app.innerHTML=`<div id="loading"><div class="icon">🛒</div><div class="text">מתחבר...</div></div>`;return;}
+
+  const c=cat(S.tab);
+  const raw=S.lists[S.tab]||[];
+  const items=S.tab==="short"?sortItems(raw):raw;
+  const hL=S.history.filter(h=>h.category==="long"||h.category==="vlong");
+  const tot=hL.reduce((s,h)=>s+(h.price||0),0);
+
+  let h="";
+
+  // Header
+  h+=`<div class="header">
+    <div class="header-top">
+      <div>
+        <h1>🛒 קניות משפחתיות</h1>
+        <div style="font-size:11px;opacity:.55;margin-top:2px;">${esc(S.me)} <span class="sync-dot ${S.connected?'on':'off'}"></span></div>
+      </div>
+      <div class="header-btns">
+        <button class="header-btn ${S.showHist?'active':''}" onclick="toggleP('hist')">📋</button>
+        <button class="header-btn ${S.showExp?'active':''}" onclick="toggleP('exp')">📤</button>
+      </div>
+    </div>
+    <div class="members-row">
+      ${MEMBERS.map((m,i)=>{
+        const cl=MC[i];const isMe=m===S.me;
+        return`<button class="member-btn" onclick="pickMe('${esc(m)}')" style="
+          background:${isMe?cl.bg:'rgba(255,255,255,.08)'};
+          color:${isMe?cl.text:'rgba(255,255,255,.65)'};
+          font-weight:${isMe?600:400};
+          border-color:${isMe?cl.border:'transparent'};
+        ">${esc(m)}</button>`;
+      }).join("")}
+    </div>
+  </div>`;
+
+  // Export
+  if(S.showExp){
+    h+=`<div class="panel" style="animation:fadeIn .2s;">
+      <div class="export-panel">
+        <button class="export-btn" style="background:#25D366" onclick="doExport('wa')">📱 וואצאפ</button>
+        <button class="export-btn" style="background:#64748b" onclick="doExport('copy')">📋 העתק</button>
+      </div>
+      <button onclick="doExport('rami')" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#e63946,#d62839);color:white;border-radius:10px;padding:11px;font-size:13px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;">
+        🛒 ייצוא לרמי לוי — קניה מהירה
+        <span style="font-size:10px;opacity:.7;font-weight:400;">(טווח קצר + בינוני)</span>
+      </button>
+    </div>`;
+  }
+
+  // History
+  if(S.showHist){
+    h+=`<div class="panel" style="max-height:360px;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <h3 style="font-size:13px;font-weight:600;margin:0;">📋 היסטוריה</h3>
+        <div class="hist-total">₪${tot.toLocaleString()}</div>
+      </div>
+      ${hL.length===0?`<p style="font-size:12px;color:#94a3b8;text-align:center;padding:14px;">אין רכישות עדיין</p>`:
+        hL.map(x=>{
+          const c2=cat(x.category);const m2=mc(x.by||x.addedBy);
+          return`<div class="hist-item">
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:500;">${c2?.icon||""} ${esc(x.name)}
+                ${x.quantity?`<span style="font-size:10px;color:#94a3b8;margin-right:4px;">×${x.quantity}${x.unit&&x.unit!=="יח׳"?` ${x.unit}`:""}</span>`:""}
+              </div>
+              ${x.note?`<div style="font-size:10px;color:#94a3b8;font-style:italic;">💬 ${esc(x.note)}</div>`:""}
+              <div style="font-size:10px;color:${m2.text};">${esc(x.by||"")} • ${fdt(x.at)}</div>
+            </div>
+            <div style="font-size:14px;font-weight:600;color:${c2?.color||'#333'};">${x.price?`₪${x.price.toLocaleString()}`:""}</div>
+          </div>`;
+        }).join("")}
+    </div>`;
+  }
+
+  // Tabs
+  h+=`<div class="tabs">${CATEGORIES.map(t=>`<button class="tab-btn ${S.tab===t.id?'active':''}" onclick="switchTab('${t.id}')"
+    style="${S.tab===t.id?`background:${t.color};color:white;box-shadow:0 3px 10px ${t.color}44;`:''}">
+    <div class="tab-icon">${t.icon}</div>${t.label}</button>`).join("")}</div>`;
+
+  // Info
+  h+=`<div class="info-bar" style="background:${c.bg};border-right:3px solid ${c.color};">
+    <span>${c.disappear?"נרכש = נמחק":c.id==="vlong"?"נרכש = היסטוריה (מחיר אופציונלי)":"נרכש = היסטוריה + מחיר"}</span>
+    <span style="font-weight:600;color:${c.color};">${items.length} פריטים</span>
+  </div>`;
+
+  // Add
+  h+=`<div class="add-section"><div class="add-row">
+    <input class="add-input" id="add-input" value="${esc(ni)}" oninput="ni=this.value"
+      onkeydown="if(event.key==='Enter')addItem()" placeholder="שם הפריט..." style="border:2px solid ${c.color}33;">
+    <button class="add-btn" onclick="addItem()" style="background:${c.color};box-shadow:0 3px 8px ${c.color}44;">+</button>
+  </div>`;
+
+  if(c.hasQty){
+    h+=`<div class="qty-row">
+      <div class="qty-box"><span class="qty-label">כמות</span>
+        <input type="number" class="qty-input" value="${esc(nq)}" oninput="nq=this.value"></div>
+      <div style="display:flex;gap:3px;flex-wrap:wrap;">
+        ${UNITS.map(u=>`<button class="unit-btn ${nu===u?'active':''}" onclick="nu='${u}';render()"
+          style="${nu===u?`background:${c.color};color:white;border:none;`:''}">${u}</button>`).join("")}
+      </div></div>`;
+  }else{
+    h+=`<input class="note-input" value="${esc(nn)}" oninput="nn=this.value"
+      onkeydown="if(event.key==='Enter')addItem()" placeholder="💬 הערה (אופציונלי)...">`;
+  }
+  h+=`</div>`;
+
+  // Items
+  h+=`<div class="items-list">`;
+  if(items.length===0){
+    h+=`<div class="empty-state"><div class="empty-icon">${c.icon}</div><div style="font-size:13px;">הרשימה ריקה</div></div>`;
+  }else{
+    let lg=null;
+    items.forEach((it,idx)=>{
+      const m=mc(it.addedBy);const vl=S.tab==="vlong"||S.tab==="general";
+
+      if(S.tab==="short"){
+        const g=SORT_GROUPS[sortOrd(it.name)]?.label||"כללי";
+        if(g!==lg){lg=g;h+=`<div class="group-header">${g}</div>`;}
+      }
+
+      const itemJ=JSON.stringify(it).replace(/'/g,"\\'").replace(/"/g,"&quot;");
+
+      h+=`<div class="item-row ${vl?'vlong':''}" id="i-${it._k}" style="background:${m.bg};border:1px solid ${m.border}22;border-right:3px solid ${m.border};animation-delay:${idx*.02}s;">
+        <button class="check-btn" onclick="markDone('${S.tab}','${it._k}','${itemJ}')"
+          style="border:2px solid ${c.color}55;color:${c.color};"
+          ontouchstart="this.style.background='${c.color}';this.style.color='white'"
+          ontouchend="this.style.background='transparent';this.style.color='${c.color}'"
+          onmouseenter="this.style.background='${c.color}';this.style.color='white'"
+          onmouseleave="this.style.background='transparent';this.style.color='${c.color}'"
+        >✓</button>
+        <div style="flex:1;min-width:0;">
+          <div class="item-name">${esc(it.name)}</div>
+          <div class="item-by" style="color:${m.text};">${esc(it.addedBy||"")}</div>
+        </div>`;
+
+      if(c.hasQty){
+        if(S.editQtyId===it._k){
+          h+=`<div style="display:flex;align-items:center;gap:2px;">
+            <input type="number" class="qty-edit" id="eqi" value="${eqv}" style="border:1.5px solid ${c.color};"
+              oninput="eqv=this.value" onblur="finishEQ('${S.tab}','${it._k}')"
+              onkeydown="if(event.key==='Enter')finishEQ('${S.tab}','${it._k}')">
+            ${it.unit&&it.unit!=="יח׳"?`<span class="qty-badge-unit">${it.unit}</span>`:""}
+          </div>`;
+        }else{
+          h+=`<button class="qty-badge" onclick="startEQ('${it._k}',${it.quantity||1})" style="border:1.5px solid ${m.border};">
+            <span>${it.quantity||1}</span>${it.unit&&it.unit!=="יח׳"?`<span class="qty-badge-unit">${it.unit}</span>`:""}</button>`;
+        }
+      }
+
+      h+=`<button class="del-btn" onclick="rmItem('${S.tab}','${it._k}')">🗑</button>`;
+
+      if(vl){
+        h+=`<div class="note-row">`;
+        if(S.editNoteId===it._k){
+          h+=`<input class="note-edit" id="eni" value="${esc(env)}" style="border:1.5px solid ${c.color};"
+            oninput="env=this.value" placeholder="הוסף הערה..."
+            onblur="finishEN('${S.tab}','${it._k}')" onkeydown="if(event.key==='Enter')finishEN('${S.tab}','${it._k}')">`;
+        }else{
+          h+=`<button style="font-size:11px;color:${it.note?'#64748b':'#cbd5e1'};font-style:${it.note?'normal':'italic'};padding:2px 0;text-align:right;width:100%;background:none;border:none;font-family:inherit;cursor:pointer;"
+            onclick="startEN('${it._k}','${esc(it.note||"")}')">${it.note?`💬 ${esc(it.note)}`:"💬 הוסף הערה..."}</button>`;
+        }
+        h+=`</div>`;
+      }
+      h+=`</div>`;
+    });
+  }
+  h+=`</div>`;
+
+  // Price modal
+  if(S.priceModal){
+    const pm=S.priceModal;
+    const isVl=pm.c==="vlong";
+    h+=`<div class="modal-overlay" onclick="S.priceModal=null;render();">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div style="font-size:34px;margin-bottom:4px;">${isVl?"📋":"💰"}</div>
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:2px;">${isVl?"שמירה בהיסטוריה":"כמה שילמת?"}</h3>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">
+          ${esc(pm.item.name)}
+          ${pm.item.quantity?` × ${pm.item.quantity} ${pm.item.unit&&pm.item.unit!=="יח׳"?pm.item.unit:""}`:""}
+          ${pm.item.note?`<span style="display:block;font-size:11px;font-style:italic;margin-top:2px;">💬 ${esc(pm.item.note)}</span>`:""}
+        </div>
+        <div class="price-row">
+          <span style="font-size:17px;font-weight:600;color:#64748b;">₪</span>
+          <input type="number" class="price-input" id="pi" value="${esc(pv)}"
+            oninput="pv=this.value" onkeydown="if(event.key==='Enter')confirmBuy()" placeholder="${isVl?'אופציונלי':'0.00'}">
+        </div>
+        <div class="modal-btns">
+          <button class="modal-cancel" onclick="S.priceModal=null;render();">ביטול</button>
+          ${isVl?`<button class="modal-confirm" onclick="confirmBuy(true)" style="background:#64748b;">ללא מחיר</button>
+          <button class="modal-confirm" onclick="confirmBuy()">עם מחיר</button>`
+          :`<button class="modal-confirm" onclick="confirmBuy()">אישור</button>`}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  app.innerHTML=h;
+}
+
+// ============================================
+// INIT
+// ============================================
+startListeners();
+render();
+</script>
+</body>
+</html>

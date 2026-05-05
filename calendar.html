@@ -447,6 +447,8 @@ function buildAlarms() {
 
   for (const ev of S.events) {
     if (ev.allDay || !ev.time) continue;
+    // Only notify on this device if the logged-in member is in the event
+    if (S.me && ev.members && !ev.members.includes(S.me)) continue;
     const occs = getOccurrences(ev, from, to);
     for (const occ of occs) {
       const [h,m] = (occ.time||'00:00').split(':').map(Number);

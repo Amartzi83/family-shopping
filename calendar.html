@@ -417,12 +417,15 @@ function upcomingOccs(days=60) {
 // SERVICE WORKER & NOTIFICATIONS
 // ══════════════════════════════════════════
 let swReg = null;
+const mainTimers = new Map(); // fallback timers in main thread
 
 async function initSW() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    swReg = await navigator.serviceWorker.register('./calendar-sw.js');
-  } catch(e) { /* file:// or other limitation */ }
+    await navigator.serviceWorker.register('./calendar-sw.js');
+    // Wait until SW is fully active before using it
+    swReg = await navigator.serviceWorker.ready;
+  } catch(e) { /* file:// or SW not supported */ }
 }
 
 async function askNotifPermission() {
@@ -436,14 +439,11 @@ async function askNotifPermission() {
   return p === 'granted';
 }
 
-function scheduleNotifications() {
-  const sw = swReg && (swReg.active || swReg.installing || swReg.waiting);
-  if (!sw || Notification.permission !== 'granted') return;
-
-  const now = Date.now();
-  const alarms = [];
+function buildAlarms() {
+  const now  = Date.now();
   const from = new Date(); from.setHours(0,0,0,0);
   const to   = new Date(now + 48*60*60*1000);
+  const alarms = [];
 
   for (const ev of S.events) {
     if (ev.allDay || !ev.time) continue;
@@ -467,7 +467,41 @@ function scheduleNotifications() {
       });
     }
   }
-  sw.postMessage({ type:'SCHEDULE', alarms });
+  return alarms;
+}
+
+function scheduleNotifications() {
+  if (Notification.permission !== 'granted') return;
+  const alarms = buildAlarms();
+
+  // ① Send to Service Worker (works when app is in background)
+  if (swReg && swReg.active) {
+    swReg.active.postMessage({ type:'SCHEDULE', alarms });
+  }
+
+  // ② Fallback: main-thread timers (works when app is open/minimized)
+  for (const t of mainTimers.values()) clearTimeout(t);
+  mainTimers.clear();
+  const now = Date.now();
+  for (const alarm of alarms) {
+    const delay = alarm.fireAt - now;
+    if (delay <= 0 || delay > 48*60*60*1000) continue;
+    const t = setTimeout(() => {
+      mainTimers.delete(alarm.id);
+      // Show via SW if available, else browser Notification
+      if (swReg && swReg.active) {
+        swReg.showNotification(alarm.title, {
+          body: alarm.body,
+          icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📅</text></svg>'),
+          tag: 'cal-' + alarm.id,
+          requireInteraction: true,
+        });
+      } else if ('Notification' in window) {
+        new Notification(alarm.title, { body: alarm.body, tag: 'cal-' + alarm.id });
+      }
+    }, delay);
+    mainTimers.set(alarm.id, t);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -914,13 +948,20 @@ if (localStorage.getItem("fcal-dark")==="1") {
   document.querySelector('meta[name="theme-color"]').content="#0f172a";
 }
 
-// SW + permission on first tap
-initSW();
+// Init SW immediately, then schedule once ready
+initSW().then(() => scheduleNotifications());
+
+// Ask permission on first tap
 document.addEventListener('click', async function once() {
   document.removeEventListener('click', once);
-  await askNotifPermission();
-  scheduleNotifications();
+  const granted = await askNotifPermission();
+  if (granted) scheduleNotifications();
 }, {once:true});
+
+// Re-schedule every time the user returns to the app
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') scheduleNotifications();
+});
 
 startListeners();
 render();

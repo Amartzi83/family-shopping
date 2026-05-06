@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;-webkit-tap-highlight-color:transparent}
@@ -213,6 +214,7 @@ const ADVANCE = [
 ];
 const REPEATS = [
   {v:"none",   l:"ללא חזרה"},
+  {v:"range",  l:"📆 תקופה (מתאריך עד תאריך)"},
   {v:"daily",  l:"כל יום"},
   {v:"weekly", l:"כל שבוע"},
   {v:"monthly",l:"כל חודש"},
@@ -270,6 +272,7 @@ function fmtTime(ev) {
 function repeatLabel(ev) {
   let base = '';
   switch(ev.repeat) {
+    case 'range':   return `📆 ${fmtDate(ev.date)} עד ${ev.endDate ? fmtDate(ev.endDate) : '?'}`;
     case 'daily':   base = 'כל יום'; break;
     case 'weekly':  base = 'כל שבוע'; break;
     case 'monthly': base = 'כל חודש'; break;
@@ -300,7 +303,6 @@ function startListeners() {
     S.events.forEach(ev => { window.__ev[ev._k] = ev; });
     S.loaded = true;
     render();
-    scheduleNotifications();
   });
   db.ref(".info/connected").on("value", snap => {
     S.connected = snap.val() === true;
@@ -311,6 +313,8 @@ function startListeners() {
 function saveEvent() {
   if (!F.title.trim()) { toast("⚠️ הכנס כותרת לאירוע"); return; }
   if (!F.members.length) { toast("⚠️ בחר לפחות בן משפחה אחד"); return; }
+  if (F.repeat === 'range' && !F.endDate) { toast("⚠️ בחר תאריך סיום לתקופה"); return; }
+  if (F.repeat === 'range' && F.endDate <= F.date) { toast("⚠️ תאריך הסיום חייב להיות אחרי תאריך ההתחלה"); return; }
 
   const ev = {
     title:      F.title.trim(),
@@ -362,6 +366,20 @@ function getOccurrences(ev, from, to) {
 
   if (!ev.repeat || ev.repeat === 'none') {
     if (base >= fromD && base <= toD) results.push({...ev, occDate: ev.date});
+    return results;
+  }
+
+  // 'range' = daily from date to endDate
+  if (ev.repeat === 'range') {
+    if (!ev.endDate) return results;
+    const rangeEnd = pd(ev.endDate);
+    const capTo = rangeEnd < toD ? rangeEnd : toD;
+    let cur = base < fromD ? new Date(fromD) : new Date(base);
+    let guard = 0;
+    while (cur <= capTo && guard++ < 400) {
+      results.push({...ev, occDate: ds(cur)});
+      cur = new Date(cur.getTime() + 86400000);
+    }
     return results;
   }
 
@@ -422,103 +440,92 @@ function upcomingOccs(days=60) {
 }
 
 // ══════════════════════════════════════════
-// SERVICE WORKER & NOTIFICATIONS
+// FCM NOTIFICATIONS
 // ══════════════════════════════════════════
-let swReg = null;
-const mainTimers = new Map(); // fallback timers in main thread
+const VAPID_KEY = 'BEbGS1bCZaZrXxWN5wp38Eg0PHMFm3S8hgXQL4wdAy9u7esFgev_ww7vSABl3yhI4fQF7IS1xiBogekTs8cdjAM';
+let fcmMessaging = null;
+let fcmReady = null; // Promise — resolves when FCM is initialized
 
-async function initSW() {
-  if (!('serviceWorker' in navigator)) return;
+async function initFCM() {
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   try {
-    await navigator.serviceWorker.register('./calendar-sw.js');
-    // Wait until SW is fully active before using it
-    swReg = await navigator.serviceWorker.ready;
-  } catch(e) { /* file:// or SW not supported */ }
+    // Register the FCM service worker
+    const swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    fcmMessaging = firebase.messaging();
+    // Handle foreground messages (app is open)
+    fcmMessaging.onMessage(payload => {
+      const n = (payload.webpush && payload.webpush.notification) || payload.notification || {};
+      toast(`🔔 ${n.title || 'תזכורת'}`);
+    });
+  } catch(e) {
+    console.log('FCM init error:', e);
+  }
 }
+fcmReady = initFCM(); // store the promise so registerFCMToken can await it
 
 async function askNotifPermission() {
   if (!('Notification' in window)) return false;
   if (Notification.permission === 'granted') return true;
   if (Notification.permission === 'denied')  return false;
   const p = await Notification.requestPermission();
-  localStorage.setItem("fcal-notif-asked","1");
+  localStorage.setItem("fcal-notif-asked", "1");
   S.notifAsked = true;
   render();
   return p === 'granted';
 }
 
-function buildAlarms() {
-  const now  = Date.now();
-  const from = new Date(); from.setHours(0,0,0,0);
-  const to   = new Date(now + 48*60*60*1000);
-  const alarms = [];
+async function registerFCMToken(memberName) {
+  await fcmReady; // wait for FCM to finish initializing
+  if (!fcmMessaging || !memberName) return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+    const token = await fcmMessaging.getToken({
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swReg,
+    });
+    if (!token) return;
 
-  for (const ev of S.events) {
-    if (ev.allDay || !ev.time) continue;
-    // Only notify on this device if the logged-in member is in the event
-    if (S.me && ev.members && !ev.members.includes(S.me)) continue;
-    const occs = getOccurrences(ev, from, to);
-    for (const occ of occs) {
-      const [h,m] = (occ.time||'00:00').split(':').map(Number);
-      const evDate = pd(occ.occDate);
-      evDate.setHours(h, m, 0, 0);
-      const fireAt = evDate.getTime() - (occ.advanceMins||0)*60000;
-      if (fireAt <= now) continue;
-
-      const memberStr = (occ.members||[]).join(', ');
-      const advTxt = occ.advanceMins > 0
-        ? ` — בעוד ${occ.advanceMins >= 60 ? (occ.advanceMins/60)+'שע׳' : occ.advanceMins+'ד׳'}`
-        : '';
-      alarms.push({
-        id:    `${occ._k}-${occ.occDate}`,
-        fireAt,
-        title: occ.title,
-        body:  `${occ.time}${advTxt} | ${memberStr}`,
-      });
+    // Device ID — one entry per device per member
+    let deviceId = localStorage.getItem('fcal-device-id');
+    if (!deviceId) {
+      deviceId = Date.now().toString(36) + Math.random().toString(36).slice(2);
+      localStorage.setItem('fcal-device-id', deviceId);
     }
+
+    // Remove token from old member if switched
+    const prevMember = localStorage.getItem('fcal-token-member');
+    if (prevMember && prevMember !== memberName) {
+      await db.ref(`fcm_tokens/${prevMember}/${deviceId}`).remove();
+    }
+
+    // Save token for current member
+    await db.ref(`fcm_tokens/${memberName}/${deviceId}`).set(token);
+    localStorage.setItem('fcal-token-member', memberName);
+  } catch(e) {
+    console.log('FCM token error:', e);
   }
-  return alarms;
 }
 
-function scheduleNotifications() {
-  if (Notification.permission !== 'granted') return;
-  const alarms = buildAlarms();
-
-  // ① Send to Service Worker (works when app is in background)
-  if (swReg && swReg.active) {
-    swReg.active.postMessage({ type:'SCHEDULE', alarms });
+async function testNotif() {
+  if (Notification.permission !== 'granted') { toast('❌ התראות לא מאושרות'); return; }
+  const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+  if (swReg) {
+    await swReg.showNotification('🔔 בדיקת התראה', {
+      body: 'אם אתה רואה זאת — ההתראות עובדות!',
+      requireInteraction: true, dir: 'rtl', lang: 'he',
+    });
   }
-
-  // ② Fallback: main-thread timers (works when app is open/minimized)
-  for (const t of mainTimers.values()) clearTimeout(t);
-  mainTimers.clear();
-  const now = Date.now();
-  for (const alarm of alarms) {
-    const delay = alarm.fireAt - now;
-    if (delay <= 0 || delay > 48*60*60*1000) continue;
-    const t = setTimeout(() => {
-      mainTimers.delete(alarm.id);
-      // Show via SW if available, else browser Notification
-      if (swReg && swReg.active) {
-        swReg.showNotification(alarm.title, {
-          body: alarm.body,
-          icon: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📅</text></svg>'),
-          tag: 'cal-' + alarm.id,
-          requireInteraction: true,
-        });
-      } else if ('Notification' in window) {
-        new Notification(alarm.title, { body: alarm.body, tag: 'cal-' + alarm.id });
-      }
-    }, delay);
-    mainTimers.set(alarm.id, t);
-  }
+  toast('📤 התראת בדיקה נשלחה');
 }
 
 // ══════════════════════════════════════════
 // ACTIONS
 // ══════════════════════════════════════════
 function pickMe(name) {
-  S.me = name; localStorage.setItem("fcal-me", name); render();
+  S.me = name; localStorage.setItem("fcal-me", name);
+  render();
+  registerFCMToken(name);
 }
 function prevMonth() {
   if (S.month===0){S.month=11;S.year--;} else S.month--;
@@ -577,21 +584,6 @@ function toggleMem(name) {
 function setColor(c) { F.color = c; render(); }
 function setRepeat(v) { F.repeat = v; render(); }
 function toggleAllDay() { F.allDay = !F.allDay; render(); }
-
-async function testNotif() {
-  if (Notification.permission !== 'granted') {
-    toast("❌ התראות לא מאושרות");
-    return;
-  }
-  const title = "🔔 בדיקת התראה";
-  const body  = "אם אתה רואה את זה — ההתראות עובדות!";
-  if (swReg && swReg.active) {
-    await swReg.showNotification(title, { body, tag:'test', requireInteraction:true });
-  } else {
-    new Notification(title, { body, tag:'test' });
-  }
-  toast("📤 התראת בדיקה נשלחה");
-}
 
 function toggleDark() {
   document.body.classList.toggle("dark");
@@ -932,12 +924,29 @@ function renderForm(isDk) {
         oninput="F.customDays=this.value" style="background:${iBg};border-color:${iBd};color:${iC};">
     </div>`:''}
 
-    ${F.repeat!=='none'?`
+    ${F.repeat==='range'?`
+    <div class="fg" style="background:${isDk?'#0f172a':'#f0f9ff'};border-radius:10px;padding:10px 12px;border:1.5px solid ${isDk?'#1e3a5f':'#bae6fd'};">
+      <label class="flbl" style="color:${isDk?'#7dd3fc':'#0369a1'};">📆 טווח התקופה</label>
+      <div class="frow" style="margin-top:4px;">
+        <div class="fg">
+          <label class="flbl">מתאריך</label>
+          <input type="date" class="finput" value="${F.date}" oninput="F.date=this.value"
+            style="background:${iBg};border-color:${iBd};color:${iC};">
+        </div>
+        <div class="fg">
+          <label class="flbl">עד תאריך *</label>
+          <input type="date" class="finput" value="${F.endDate}" oninput="F.endDate=this.value"
+            min="${F.date}" style="background:${iBg};border-color:${F.endDate?iBd:'#ef4444'};color:${iC};">
+        </div>
+      </div>
+    </div>`
+    : F.repeat!=='none'?`
     <div class="fg">
-      <label class="flbl">עד תאריך (אופציונלי — ללא תאריך = חוזר לנצח)</label>
+      <label class="flbl">עד תאריך (אופציונלי — ריק = חוזר לנצח)</label>
       <input type="date" class="finput" value="${F.endDate}" oninput="F.endDate=this.value"
         min="${F.date}" style="background:${iBg};border-color:${iBd};color:${iC};">
-    </div>`:''}
+    </div>`
+    :''}
 
     <div class="fg">
       <label class="flbl">בני משפחה</label>
@@ -990,20 +999,12 @@ if (localStorage.getItem("fcal-dark")==="1") {
   document.querySelector('meta[name="theme-color"]').content="#0f172a";
 }
 
-// Init SW immediately, then schedule once ready
-initSW().then(() => scheduleNotifications());
-
-// Ask permission on first tap
+// Ask permission on first tap → register FCM token
 document.addEventListener('click', async function once() {
   document.removeEventListener('click', once);
   const granted = await askNotifPermission();
-  if (granted) scheduleNotifications();
+  if (granted && S.me) registerFCMToken(S.me);
 }, {once:true});
-
-// Re-schedule every time the user returns to the app
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') scheduleNotifications();
-});
 
 startListeners();
 render();

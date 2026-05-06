@@ -447,19 +447,16 @@ let fcmMessaging = null;
 let fcmReady = null; // Promise — resolves when FCM is initialized
 
 async function initFCM() {
-  if (!('serviceWorker' in navigator)) { toast('❌ אין ServiceWorker'); return; }
-  if (!('Notification' in window))     { toast('❌ אין Notification API'); return; }
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   try {
-    const swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-    toast('✅ SW נרשם');
+    await navigator.serviceWorker.register('./firebase-messaging-sw.js');
     fcmMessaging = firebase.messaging();
-    toast('✅ FCM אותחל');
     fcmMessaging.onMessage(payload => {
       const n = (payload.webpush && payload.webpush.notification) || payload.notification || {};
       toast(`🔔 ${n.title || 'תזכורת'}`);
     });
   } catch(e) {
-    toast('❌ initFCM שגיאה: ' + e.message);
+    console.log('FCM init error:', e);
   }
 }
 
@@ -476,18 +473,16 @@ async function askNotifPermission() {
 
 async function registerFCMToken(memberName) {
   await fcmReady;
-  if (!memberName) { toast('❌ רגיסטר: אין שם משתמש'); return; }
-  if (!fcmMessaging) { toast('❌ FCM לא אותחל'); return; }
-  if (Notification.permission !== 'granted') { toast('❌ אין הרשאת התראות'); return; }
+  if (!fcmMessaging || !memberName) return;
+  if (Notification.permission !== 'granted') return;
   try {
-    toast('⏳ מקבל טוקן...');
     const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
-    if (!swReg) { toast('❌ Service Worker לא נמצא'); return; }
+    if (!swReg) return;
     const token = await fcmMessaging.getToken({
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: swReg,
     });
-    if (!token) { toast('❌ טוקן ריק - בדוק VAPID'); return; }
+    if (!token) return;
 
     let deviceId = localStorage.getItem('fcal-device-id');
     if (!deviceId) {
@@ -502,9 +497,8 @@ async function registerFCMToken(memberName) {
 
     await db.ref(`fcm_tokens/${memberName}/${deviceId}`).set(token);
     localStorage.setItem('fcal-token-member', memberName);
-    toast('✅ טוקן נשמר ל-Firebase!');
   } catch(e) {
-    toast('❌ שגיאה: ' + e.message);
+    console.log('FCM token error:', e);
   }
 }
 

@@ -284,9 +284,10 @@ function repeatLabel(ev) {
 }
 function blankF() {
   return {
-    title:"", date:ds(_today), time:"09:00", allDay:false,
-    repeat:"none", customDays:7, endDate:"",
-    members:[...MEMBERS], advanceMins:30,
+    eventType:"reminder",
+    title:"", date:ds(_today), endDate:"", time:"09:00", allDay:false,
+    repeat:"none", customDays:7,
+    members:[...MEMBERS], advanceMins:[30],
     color:COLORS[0], note:""
   };
 }
@@ -311,21 +312,22 @@ function startListeners() {
 }
 
 function saveEvent() {
-  if (!F.title.trim()) { toast("⚠️ הכנס כותרת לאירוע"); return; }
+  if (!F.title.trim()) { toast("⚠️ הכנס כותרת"); return; }
   if (!F.members.length) { toast("⚠️ בחר לפחות בן משפחה אחד"); return; }
-  if (F.repeat === 'range' && !F.endDate) { toast("⚠️ בחר תאריך סיום לתקופה"); return; }
-  if (F.repeat === 'range' && F.endDate <= F.date) { toast("⚠️ תאריך הסיום חייב להיות אחרי תאריך ההתחלה"); return; }
+  if (F.eventType === 'event' && F.endDate && F.endDate <= F.date) { toast("⚠️ תאריך הסיום חייב להיות אחרי תאריך ההתחלה"); return; }
+  if (F.eventType === 'reminder' && F.repeat === 'range' && !F.endDate) { toast("⚠️ בחר תאריך סיום לתקופה"); return; }
 
+  const isEvent = F.eventType === 'event';
   const ev = {
     title:      F.title.trim(),
     date:       F.date,
-    time:       F.allDay ? null : F.time,
-    allDay:     F.allDay,
-    repeat:     F.repeat,
+    time:       isEvent ? null : F.time,
+    allDay:     isEvent ? true : F.allDay,
+    repeat:     isEvent ? (F.endDate && F.endDate > F.date ? 'range' : 'none') : F.repeat,
     customDays: F.repeat === 'custom' ? (parseInt(F.customDays)||7) : null,
-    endDate:    (F.repeat !== 'none' && F.endDate) ? F.endDate : null,
+    endDate:    isEvent ? (F.endDate || null) : ((F.repeat !== 'none' && F.endDate) ? F.endDate : null),
     members:    F.members,
-    advanceMins:F.allDay ? 0 : F.advanceMins,
+    advanceMins:isEvent ? [0] : F.advanceMins,
     color:      F.color,
     note:       F.note.trim(),
     addedBy:    S.me,
@@ -558,7 +560,8 @@ function openEdit(key) {
     customDays: ev.customDays || 7,
     endDate:    ev.endDate || "",
     members:    ev.members ? [...ev.members] : [...MEMBERS],
-    advanceMins:ev.advanceMins ?? 30,
+    eventType:  (ev.allDay && (ev.repeat === 'range' || !ev.time)) ? 'event' : 'reminder',
+    advanceMins:Array.isArray(ev.advanceMins) ? ev.advanceMins : [ev.advanceMins ?? 30],
     color:      ev.color  || COLORS[0],
     note:       ev.note   || "",
   };
@@ -567,6 +570,15 @@ function openEdit(key) {
 }
 function closeForm() {
   S.showForm = false; S.editKey = null; render();
+}
+function setEventType(t) { F.eventType = t; render(); }
+function toggleAdv(v) {
+  if (F.advanceMins.includes(v)) {
+    if (F.advanceMins.length > 1) F.advanceMins = F.advanceMins.filter(x => x !== v);
+  } else {
+    F.advanceMins = [...F.advanceMins, v].sort((a,b) => a-b);
+  }
+  render();
 }
 function toggleMem(name) {
   if (F.members.includes(name)) {
@@ -811,8 +823,7 @@ function renderUpcoming(isDk) {
       const bg      = isDk ? '#1e293b' : (ev.color||'#6366f1')+'15';
       const chips   = (ev.members||[]).map(m => memberChip(m, isDk)).join('');
       const repLbl  = repeatLabel(ev);
-      const advLbl  = (!ev.allDay && ev.advanceMins > 0)
-        ? `🔔 ${ev.advanceMins>=60?(ev.advanceMins/60)+'שע׳':ev.advanceMins+'ד׳'} לפני` : '';
+      const advLbl  = advLabel(ev);
       h += `<div class="up-ev" style="background:${bg};border-right-color:${ev.color||'#6366f1'};" onclick="openEdit('${ev._k}')">
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:600;color:${isDk?'#e2e8f0':'#1e293b'};margin-bottom:2px;">${esc(ev.title)}</div>
@@ -852,7 +863,7 @@ function evCard(ev, isDk) {
         <div class="ev-meta">
           <span>${fmtTime(ev)}</span>
           ${rep?`<span style="color:${ev.color||'#6366f1'};font-weight:600;">🔄 ${rep}</span>`:''}
-          ${ev.advanceMins>0&&!ev.allDay?`<span>🔔 ${ev.advanceMins>=60?(ev.advanceMins/60)+'שע׳':ev.advanceMins+'ד׳'} לפני</span>`:''}
+          ${advLabel(ev)?`<span>${advLabel(ev)}</span>`:''}
         </div>
         <div class="chips">${chips}</div>
         ${ev.note?`<div style="font-size:11px;color:#64748b;font-style:italic;margin-top:3px;">💬 ${esc(ev.note)}</div>`:''}
@@ -862,6 +873,13 @@ function evCard(ev, isDk) {
   </div>`;
 }
 
+function advLabel(ev) {
+  if (ev.allDay) return '';
+  const arr = Array.isArray(ev.advanceMins) ? ev.advanceMins : [ev.advanceMins ?? 30];
+  if (!arr.length) return '';
+  const parts = arr.map(v => v === 0 ? 'בזמן' : v >= 60 ? (v/60)+"שע׳" : v+"ד׳");
+  return `🔔 ${parts.join(' + ')} לפני`;
+}
 function memberChip(m, isDk) {
   const cl = mc(m);
   return `<span class="chip" style="background:${isDk?cl.darkBg:cl.bg};color:${isDk?cl.darkText:cl.text};">${esc(m)}</span>`;
@@ -877,14 +895,44 @@ function renderForm(isDk) {
   <div class="overlay" onclick="closeForm()"></div>
   <div class="sheet" onclick="event.stopPropagation()">
     <div class="handle"></div>
-    <div class="form-title">${S.editKey?'✏️ עריכת אירוע':'➕ אירוע / תזכורת חדשה'}</div>
+    <div class="form-title">${S.editKey?'✏️ עריכה':'➕ חדש'}</div>
+
+    <!-- סוג -->
+    <div class="fg">
+      <div style="display:flex;gap:8px;margin-bottom:2px;">
+        <button onclick="setEventType('reminder')" style="flex:1;padding:10px;border-radius:11px;font-size:14px;font-weight:600;font-family:inherit;
+          ${F.eventType==='reminder'?'background:#6366f1;color:white;':'background:'+iBg+';color:'+iC+';border:1.5px solid '+iBd+';'}">
+          🔔 תזכורת
+        </button>
+        <button onclick="setEventType('event')" style="flex:1;padding:10px;border-radius:11px;font-size:14px;font-weight:600;font-family:inherit;
+          ${F.eventType==='event'?'background:#6366f1;color:white;':'background:'+iBg+';color:'+iC+';border:1.5px solid '+iBd+';'}">
+          📅 אירוע
+        </button>
+      </div>
+    </div>
 
     <div class="fg">
       <label class="flbl">כותרת *</label>
       <input class="finput" id="ft" value="${esc(F.title)}" oninput="F.title=this.value"
-        placeholder="שם האירוע או התזכורת..." style="background:${iBg};border-color:${iBd};color:${iC};">
+        placeholder="${F.eventType==='event'?'שם האירוע, למשל: טיול פסח...':'שם התזכורת...'}"
+        style="background:${iBg};border-color:${iBd};color:${iC};">
     </div>
 
+    ${F.eventType==='event'?`
+    <!-- אירוע: תאריך התחלה + סיום -->
+    <div class="frow">
+      <div class="fg">
+        <label class="flbl">מתאריך</label>
+        <input type="date" class="finput" value="${F.date}" oninput="F.date=this.value"
+          style="background:${iBg};border-color:${iBd};color:${iC};">
+      </div>
+      <div class="fg">
+        <label class="flbl">עד תאריך</label>
+        <input type="date" class="finput" value="${F.endDate}" oninput="F.endDate=this.value"
+          min="${F.date}" style="background:${iBg};border-color:${iBd};color:${iC};">
+      </div>
+    </div>`:`
+    <!-- תזכורת: תאריך + שעה -->
     <div class="frow">
       <div class="fg">
         <label class="flbl">תאריך</label>
@@ -908,7 +956,7 @@ function renderForm(isDk) {
     <div class="fg">
       <label class="flbl">חזרה</label>
       <select class="fsel" onchange="setRepeat(this.value)" style="background:${iBg};border-color:${iBd};color:${iC};">
-        ${REPEATS.map(o=>`<option value="${o.v}" ${F.repeat===o.v?'selected':''}>${o.l}</option>`).join('')}
+        ${REPEATS.filter(o=>o.v!=='range').map(o=>`<option value="${o.v}" ${F.repeat===o.v?'selected':''}>${o.l}</option>`).join('')}
       </select>
     </div>
 
@@ -919,29 +967,13 @@ function renderForm(isDk) {
         oninput="F.customDays=this.value" style="background:${iBg};border-color:${iBd};color:${iC};">
     </div>`:''}
 
-    ${F.repeat==='range'?`
-    <div class="fg" style="background:${isDk?'#0f172a':'#f0f9ff'};border-radius:10px;padding:10px 12px;border:1.5px solid ${isDk?'#1e3a5f':'#bae6fd'};">
-      <label class="flbl" style="color:${isDk?'#7dd3fc':'#0369a1'};">📆 טווח התקופה</label>
-      <div class="frow" style="margin-top:4px;">
-        <div class="fg">
-          <label class="flbl">מתאריך</label>
-          <input type="date" class="finput" value="${F.date}" oninput="F.date=this.value"
-            style="background:${iBg};border-color:${iBd};color:${iC};">
-        </div>
-        <div class="fg">
-          <label class="flbl">עד תאריך *</label>
-          <input type="date" class="finput" value="${F.endDate}" oninput="F.endDate=this.value"
-            min="${F.date}" style="background:${iBg};border-color:${F.endDate?iBd:'#ef4444'};color:${iC};">
-        </div>
-      </div>
-    </div>`
-    : F.repeat!=='none'?`
+    ${F.repeat!=='none'?`
     <div class="fg">
-      <label class="flbl">עד תאריך (אופציונלי — ריק = חוזר לנצח)</label>
+      <label class="flbl">עד תאריך (אופציונלי)</label>
       <input type="date" class="finput" value="${F.endDate}" oninput="F.endDate=this.value"
         min="${F.date}" style="background:${iBg};border-color:${iBd};color:${iC};">
-    </div>`
-    :''}
+    </div>`:''}
+    `}
 
     <div class="fg">
       <label class="flbl">בני משפחה</label>
@@ -955,13 +987,19 @@ function renderForm(isDk) {
       </div>
     </div>
 
-    ${!F.allDay?`
+    ${F.eventType==='reminder' && !F.allDay?`
     <div class="fg">
-      <label class="flbl">תזכורת</label>
-      <select class="fsel" onchange="F.advanceMins=parseInt(this.value)" style="background:${iBg};border-color:${iBd};color:${iC};">
-        ${ADVANCE.map(o=>`<option value="${o.v}" ${F.advanceMins===o.v?'selected':''}>${o.l}</option>`).join('')}
-      </select>
+      <label class="flbl">תזכורות (ניתן לבחור מספר)</label>
+      <div class="mems-grid">
+        ${ADVANCE.map(o=>{
+          const sel = F.advanceMins.includes(o.v);
+          return `<button class="mem-check" onclick="toggleAdv(${o.v})" style="${sel
+            ?`background:#6366f1;color:white;border:none;`
+            :`background:${isDk?'#0f172a':'white'};color:${isDk?'#94a3b8':'#64748b'};border-color:${iBd};`}">${o.l}</button>`;
+        }).join('')}
+      </div>
     </div>`:''}
+
 
     <div class="fg">
       <label class="flbl">צבע</label>

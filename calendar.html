@@ -447,21 +447,21 @@ let fcmMessaging = null;
 let fcmReady = null; // Promise — resolves when FCM is initialized
 
 async function initFCM() {
-  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+  if (!('serviceWorker' in navigator)) { toast('❌ אין ServiceWorker'); return; }
+  if (!('Notification' in window))     { toast('❌ אין Notification API'); return; }
   try {
-    // Register the FCM service worker
     const swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+    toast('✅ SW נרשם');
     fcmMessaging = firebase.messaging();
-    // Handle foreground messages (app is open)
+    toast('✅ FCM אותחל');
     fcmMessaging.onMessage(payload => {
       const n = (payload.webpush && payload.webpush.notification) || payload.notification || {};
       toast(`🔔 ${n.title || 'תזכורת'}`);
     });
   } catch(e) {
-    console.log('FCM init error:', e);
+    toast('❌ initFCM שגיאה: ' + e.message);
   }
 }
-fcmReady = initFCM(); // store the promise so registerFCMToken can await it
 
 async function askNotifPermission() {
   if (!('Notification' in window)) return false;
@@ -999,6 +999,9 @@ if (localStorage.getItem("fcal-dark")==="1") {
   document.body.classList.add("dark");
   document.querySelector('meta[name="theme-color"]').content="#0f172a";
 }
+
+// Init FCM (store promise so registerFCMToken can await it)
+fcmReady = initFCM();
 
 // Ask permission on first tap → register FCM token
 document.addEventListener('click', async function once() {

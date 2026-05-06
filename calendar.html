@@ -268,18 +268,21 @@ function fmtTime(ev) {
   return ev.time || "";
 }
 function repeatLabel(ev) {
+  let base = '';
   switch(ev.repeat) {
-    case 'daily':   return 'כל יום';
-    case 'weekly':  return 'כל שבוע';
-    case 'monthly': return 'כל חודש';
-    case 'custom':  return `כל ${ev.customDays||7} ימים`;
+    case 'daily':   base = 'כל יום'; break;
+    case 'weekly':  base = 'כל שבוע'; break;
+    case 'monthly': base = 'כל חודש'; break;
+    case 'custom':  base = `כל ${ev.customDays||7} ימים`; break;
     default: return '';
   }
+  if (ev.endDate) base += ` עד ${fmtDate(ev.endDate)}`;
+  return base;
 }
 function blankF() {
   return {
     title:"", date:ds(_today), time:"09:00", allDay:false,
-    repeat:"none", customDays:7,
+    repeat:"none", customDays:7, endDate:"",
     members:[...MEMBERS], advanceMins:30,
     color:COLORS[0], note:""
   };
@@ -316,6 +319,7 @@ function saveEvent() {
     allDay:     F.allDay,
     repeat:     F.repeat,
     customDays: F.repeat === 'custom' ? (parseInt(F.customDays)||7) : null,
+    endDate:    (F.repeat !== 'none' && F.endDate) ? F.endDate : null,
     members:    F.members,
     advanceMins:F.allDay ? 0 : F.advanceMins,
     color:      F.color,
@@ -353,7 +357,7 @@ function deleteEvent(key) {
 function getOccurrences(ev, from, to) {
   const base   = pd(ev.date);
   const fromD  = (from instanceof Date) ? from : pd(from);
-  const toD    = (to   instanceof Date) ? to   : pd(to);
+  let   toD    = (to   instanceof Date) ? to   : pd(to);
   const results = [];
 
   if (!ev.repeat || ev.repeat === 'none') {
@@ -376,6 +380,10 @@ function getOccurrences(ev, from, to) {
       cur = new Date(cur.getTime() + Math.ceil(diffDays/n)*n*86400000);
     }
   }
+
+  // Cap at event's own endDate if set
+  const evEnd = ev.endDate ? pd(ev.endDate) : null;
+  if (evEnd && evEnd < toD) toD = evEnd;
 
   let guard = 0;
   while (cur <= toD && guard++ < 400) {
@@ -546,6 +554,7 @@ function openEdit(key) {
     allDay:     ev.allDay || false,
     repeat:     ev.repeat || "none",
     customDays: ev.customDays || 7,
+    endDate:    ev.endDate || "",
     members:    ev.members ? [...ev.members] : [...MEMBERS],
     advanceMins:ev.advanceMins ?? 30,
     color:      ev.color  || COLORS[0],
@@ -568,6 +577,21 @@ function toggleMem(name) {
 function setColor(c) { F.color = c; render(); }
 function setRepeat(v) { F.repeat = v; render(); }
 function toggleAllDay() { F.allDay = !F.allDay; render(); }
+
+async function testNotif() {
+  if (Notification.permission !== 'granted') {
+    toast("❌ התראות לא מאושרות");
+    return;
+  }
+  const title = "🔔 בדיקת התראה";
+  const body  = "אם אתה רואה את זה — ההתראות עובדות!";
+  if (swReg && swReg.active) {
+    await swReg.showNotification(title, { body, tag:'test', requireInteraction:true });
+  } else {
+    new Notification(title, { body, tag:'test' });
+  }
+  toast("📤 התראת בדיקה נשלחה");
+}
 
 function toggleDark() {
   document.body.classList.toggle("dark");
@@ -651,10 +675,19 @@ function render() {
   </div>`;
 
   // ── Notification banner ──
-  if (!S.notifAsked && 'Notification' in window && Notification.permission === 'default') {
+  if ('Notification' in window && Notification.permission === 'default') {
     h += `<div class="notif-bar">
       <span>🔔 אפשר התראות כדי לקבל תזכורות</span>
       <button onclick="askNotifPermission()">אפשר</button>
+    </div>`;
+  } else if ('Notification' in window && Notification.permission === 'granted') {
+    h += `<div class="notif-bar" style="background:#f0fdf4;border-color:#86efac;justify-content:space-between;">
+      <span style="color:#166534;">✅ התראות מופעלות</span>
+      <button onclick="testNotif()" style="background:#22c55e;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;">בדוק עכשיו</button>
+    </div>`;
+  } else if ('Notification' in window && Notification.permission === 'denied') {
+    h += `<div class="notif-bar" style="background:#fef2f2;border-color:#fca5a5;">
+      <span style="color:#991b1b;">❌ התראות חסומות — פתח הגדרות דפדפן לאפשר</span>
     </div>`;
   }
 
@@ -897,6 +930,13 @@ function renderForm(isDk) {
       <label class="flbl">כל כמה ימים?</label>
       <input type="number" class="finput" value="${F.customDays}" min="1" max="365"
         oninput="F.customDays=this.value" style="background:${iBg};border-color:${iBd};color:${iC};">
+    </div>`:''}
+
+    ${F.repeat!=='none'?`
+    <div class="fg">
+      <label class="flbl">עד תאריך (אופציונלי — ללא תאריך = חוזר לנצח)</label>
+      <input type="date" class="finput" value="${F.endDate}" oninput="F.endDate=this.value"
+        min="${F.date}" style="background:${iBg};border-color:${iBd};color:${iC};">
     </div>`:''}
 
     <div class="fg">

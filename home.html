@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1e293b">
+<title>משפחה</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;-webkit-tap-highlight-color:transparent}
+body{font-family:'Rubik',sans-serif;background:#f1f5f9;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+.header{
+  background:linear-gradient(145deg,#1e293b 0%,#0f4c75 100%);
+  padding:36px 24px 28px;
+  color:white;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.header::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.header-emoji{font-size:48px;margin-bottom:8px;display:block;animation:popIn .5s ease}
+.header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
+.header-sub{font-size:13px;color:rgba(255,255,255,.6);font-weight:400}
+.header-date{
+  display:inline-block;margin-top:10px;
+  background:rgba(255,255,255,.12);
+  border-radius:20px;padding:5px 16px;
+  font-size:12px;font-weight:500;color:rgba(255,255,255,.85);
+}
+
+/* App cards */
+.cards{padding:20px 16px;display:flex;flex-direction:column;gap:14px}
+
+.app-card{
+  border-radius:18px;padding:22px 20px;
+  display:flex;align-items:center;gap:16px;
+  text-decoration:none;
+  transition:transform .15s, box-shadow .15s;
+  animation:slideUp .3s ease both;
+  cursor:pointer;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+  position:relative;overflow:hidden;
+}
+.app-card:active{transform:scale(.97)}
+.app-card::after{
+  content:'‹';position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  font-size:22px;color:rgba(255,255,255,.5);font-weight:300;
+}
+.app-card:nth-child(1){animation-delay:.05s}
+.app-card:nth-child(2){animation-delay:.12s}
+
+.card-icon{font-size:44px;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
+.card-info{flex:1;min-width:0}
+.card-title{font-size:19px;font-weight:700;color:white;margin-bottom:3px}
+.card-desc{font-size:12px;color:rgba(255,255,255,.7);line-height:1.4}
+.card-badge{
+  position:absolute;top:14px;left:52px;
+  background:rgba(255,255,255,.25);
+  border-radius:10px;padding:2px 8px;
+  font-size:10px;font-weight:700;color:white;
+}
+
+/* Today's events */
+.today-section{margin:0 16px;animation:slideUp .3s ease .2s both}
+.today-hd{font-size:13px;font-weight:700;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.today-ev{
+  background:white;border-radius:12px;padding:11px 14px;
+  margin-bottom:6px;border-right:4px solid #6366f1;
+  box-shadow:0 1px 6px rgba(0,0,0,.05);
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;transition:transform .15s;
+}
+.today-ev:active{transform:scale(.98)}
+.ev-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.ev-name{font-size:14px;font-weight:600;color:#1e293b;flex:1}
+.ev-time{font-size:11px;color:#94a3b8;font-weight:500}
+.no-events{
+  background:white;border-radius:12px;padding:14px 16px;
+  text-align:center;color:#cbd5e1;font-size:13px;
+  box-shadow:0 1px 6px rgba(0,0,0,.04);
+}
+
+/* Loading dots */
+.ldot{width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;animation:pulse 1.2s ease infinite}
+.ldot:nth-child(2){animation-delay:.2s}
+.ldot:nth-child(3){animation-delay:.4s}
+
+/* Dark mode */
+body.dark{background:#0f172a}
+.dark .header{background:linear-gradient(145deg,#0f172a 0%,#0c2e4a 100%)}
+.dark .today-ev{background:#1e293b;color:#e2e8f0}
+.dark .ev-name{color:#e2e8f0}
+.dark .no-events{background:#1e293b;color:#475569}
+.dark .today-hd{color:#64748b}
+
+.dark-toggle{
+  position:absolute;top:18px;left:18px;
+  background:rgba(255,255,255,.1);border-radius:9px;
+  padding:6px 10px;font-size:15px;border:none;cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+<div id="root">
+  <div style="display:flex;justify-content:center;align-items:center;height:100vh;gap:6px;">
+    <div class="ldot"></div><div class="ldot"></div><div class="ldot"></div>
+  </div>
+</div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AlzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
+  authDomain: "family-shopping-9f8a6.firebaseapp.com",
+  databaseURL: "https://family-shopping-9f8a6-default-rtdb.firebaseio.com",
+  projectId: "family-shopping-9f8a6",
+  storageBucket: "family-shopping-9f8a6.firebasestorage.app",
+  messagingSenderId: "7886163686",
+  appId: "1:7886163686:web:544391dd14dac18b2ab527"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const MONTHS_HE = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+const DAYS_HE   = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+
+function ds(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function pd(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+const esc = s => s?String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):"";
+
+let todayEvents = [];
+let shoppingCount = 0;
+
+function getOccurrences(ev, dateStr) {
+  const base = pd(ev.date);
+  const target = pd(dateStr);
+  if (!ev.repeat || ev.repeat==='none') return base.getTime()===target.getTime();
+  if (base > target) return false;
+  const diff = Math.round((target-base)/86400000);
+  if (ev.repeat==='daily')   return true;
+  if (ev.repeat==='weekly')  return diff%7===0;
+  if (ev.repeat==='monthly') return base.getDate()===target.getDate();
+  if (ev.repeat==='custom')  return diff%(ev.customDays||7)===0;
+  return false;
+}
+
+function loadData() {
+  const todayStr = ds(new Date());
+
+  db.ref("calendar/events").once("value", snap => {
+    const d = snap.val()||{};
+    todayEvents = Object.values(d).filter(ev => getOccurrences(ev, todayStr))
+      .sort((a,b)=>{
+        if(a.allDay!==b.allDay) return a.allDay?-1:1;
+        return (a.time||'').localeCompare(b.time||'');
+      });
+    render();
+  });
+
+  db.ref("lists/short").once("value", snap => {
+    const d = snap.val()||{};
+    shoppingCount = Object.keys(d).length;
+    render();
+  });
+}
+
+function toggleDark() {
+  document.body.classList.toggle("dark");
+  const d = document.body.classList.contains("dark");
+  localStorage.setItem("fhome-dark", d?"1":"0");
+  document.querySelector('meta[name="theme-color"]').content = d?"#0f172a":"#1e293b";
+  render();
+}
+
+function render() {
+  const now = new Date();
+  const isDk = document.body.classList.contains("dark");
+  const dateLabel = `יום ${DAYS_HE[now.getDay()]}, ${now.getDate()} ב${MONTHS_HE[now.getMonth()]} ${now.getFullYear()}`;
+
+  const evCards = todayEvents.length
+    ? todayEvents.map(ev => `
+        <div class="today-ev" onclick="location.href='calendar.html'" style="border-right-color:${ev.color||'#6366f1'}">
+          <div class="ev-dot" style="background:${ev.color||'#6366f1'}"></div>
+          <div class="ev-name">${esc(ev.title)}</div>
+          <div class="ev-time">${ev.allDay?'כל היום':ev.time||''}</div>
+        </div>`).join('')
+    : `<div class="no-events">אין אירועים היום 🎉</div>`;
+
+  document.getElementById("root").innerHTML = `
+    <div class="header">
+      <button class="dark-toggle" onclick="toggleDark()">${isDk?"☀️":"🌙"}</button>
+      <span class="header-emoji">🏠</span>
+      <h1>המשפחה שלנו</h1>
+      <div class="header-sub">הכל במקום אחד</div>
+      <div class="header-date">📅 ${dateLabel}</div>
+    </div>
+
+    <div class="cards">
+      <div class="app-card" onclick="location.href='shopping.html'"
+        style="background:linear-gradient(135deg,#1e293b,#334155);">
+        <div class="card-icon">🛒</div>
+        <div class="card-info">
+          <div class="card-title">קניות משפחתיות</div>
+          <div class="card-desc">רשימות קניות, שוברים ותווים, היסטוריה</div>
+        </div>
+        ${shoppingCount>0?`<div class="card-badge">${shoppingCount} פריטים</div>`:''}
+      </div>
+
+      <div class="app-card" onclick="location.href='calendar.html'"
+        style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
+        <div class="card-icon">📅</div>
+        <div class="card-info">
+          <div class="card-title">יומן משפחתי</div>
+          <div class="card-desc">אירועים, תזכורות ועוד — לכל בני המשפחה</div>
+        </div>
+        ${todayEvents.length>0?`<div class="card-badge">${todayEvents.length} היום</div>`:''}
+      </div>
+    </div>
+
+    <div class="today-section">
+      <div class="today-hd">📆 אירועים להיום</div>
+      ${evCards}
+    </div>`;
+}
+
+if (localStorage.getItem("fhome-dark")==="1") {
+  document.body.classList.add("dark");
+  document.querySelector('meta[name="theme-color"]').content="#0f172a";
+}
+
+render();
+loadData();
+</script>
+</body>
+</html>

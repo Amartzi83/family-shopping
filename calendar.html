@@ -475,35 +475,36 @@ async function askNotifPermission() {
 }
 
 async function registerFCMToken(memberName) {
-  await fcmReady; // wait for FCM to finish initializing
-  if (!fcmMessaging || !memberName) return;
-  if (Notification.permission !== 'granted') return;
+  await fcmReady;
+  if (!memberName) { toast('❌ רגיסטר: אין שם משתמש'); return; }
+  if (!fcmMessaging) { toast('❌ FCM לא אותחל'); return; }
+  if (Notification.permission !== 'granted') { toast('❌ אין הרשאת התראות'); return; }
   try {
+    toast('⏳ מקבל טוקן...');
     const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+    if (!swReg) { toast('❌ Service Worker לא נמצא'); return; }
     const token = await fcmMessaging.getToken({
       vapidKey: VAPID_KEY,
       serviceWorkerRegistration: swReg,
     });
-    if (!token) return;
+    if (!token) { toast('❌ טוקן ריק - בדוק VAPID'); return; }
 
-    // Device ID — one entry per device per member
     let deviceId = localStorage.getItem('fcal-device-id');
     if (!deviceId) {
       deviceId = Date.now().toString(36) + Math.random().toString(36).slice(2);
       localStorage.setItem('fcal-device-id', deviceId);
     }
 
-    // Remove token from old member if switched
     const prevMember = localStorage.getItem('fcal-token-member');
     if (prevMember && prevMember !== memberName) {
       await db.ref(`fcm_tokens/${prevMember}/${deviceId}`).remove();
     }
 
-    // Save token for current member
     await db.ref(`fcm_tokens/${memberName}/${deviceId}`).set(token);
     localStorage.setItem('fcal-token-member', memberName);
+    toast('✅ טוקן נשמר ל-Firebase!');
   } catch(e) {
-    console.log('FCM token error:', e);
+    toast('❌ שגיאה: ' + e.message);
   }
 }
 

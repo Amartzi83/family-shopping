@@ -247,6 +247,23 @@ input,select,textarea{font-family:inherit}
 }
 .add-hist-btn:active{background:#f0fdf9}
 
+/* ── Service items ── */
+.service-item{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.service-item .form-input{margin:0}
+.service-item .price-inp{width:88px;flex-shrink:0}
+.service-item-del{font-size:18px;color:#fca5a5;flex-shrink:0;padding:2px 4px;transition:opacity .15s}
+.service-item-del:active{opacity:.6}
+.service-total-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:#f0fdf9;border-radius:10px;
+  margin-top:6px;font-size:14px;font-weight:700;color:#0f766e;
+  border:1px solid #99f6e4;
+}
+.hist-items{margin-top:8px;padding-top:8px;border-top:1px solid #e2e8f0}
+.hist-item-row{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:#64748b}
+.hist-item-name{flex:1}
+.hist-item-price{font-weight:600;color:#334155;flex-shrink:0}
+
 /* ── Loading ── */
 .ldot{width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;animation:pulse 1.2s ease infinite}
 .ldot:nth-child(2){animation-delay:.2s}
@@ -281,6 +298,10 @@ body.dark .add-hist-btn{background:#0f172a;border-color:#134e4a;color:#5eead4}
 body.dark .modal-section{border-color:#334155}
 body.dark .alert-banner{background:linear-gradient(135deg,#2d1515,#2d1e0f);border-color:#7f1d1d}
 body.dark .alert-banner-item{color:#fca5a5}
+body.dark .service-total-row{background:#134e4a;border-color:#0f766e;color:#5eead4}
+body.dark .hist-items{border-color:#334155}
+body.dark .hist-item-row{color:#64748b}
+body.dark .hist-item-price{color:#94a3b8}
 </style>
 </head>
 <body>
@@ -322,8 +343,9 @@ let cars     = {};
 let maint    = {};
 let expenses = {};
 let hist     = {};   // { carId: { key: { id: { date, cost, note } } } }
-let view       = 'list';
-let selCarId   = null;
+let view          = 'list';
+let selCarId      = null;
+let serviceItems  = [];   // [{ name, price }] for טיפול תקופתי modal
 let activeTab  = 'maint';
 let isDark     = localStorage.getItem('cars-dark') === '1';
 let loaded     = 0;
@@ -551,7 +573,8 @@ function renderDetail() {
       ${car.year  ? `<div class="info-row"><div class="info-label">שנת ייצור</div><div class="info-val">${esc(car.year)}</div></div>` : ''}
       ${car.plate ? `<div class="info-row"><div class="info-label">לוחית רישוי</div><div class="info-val" style="font-family:monospace;letter-spacing:.8px">${esc(car.plate)}</div></div>` : ''}
       ${car.owner ? `<div class="info-row"><div class="info-label">בעלים</div><div class="info-val">👤 ${esc(car.owner)}</div></div>` : ''}
-      ${car.km    ? `<div class="info-row"><div class="info-label">קילומטראז׳</div><div class="info-val">${Number(car.km).toLocaleString('he-IL')} ק"מ</div></div>` : ''}
+      ${car.km       ? `<div class="info-row"><div class="info-label">קילומטראז׳</div><div class="info-val">${Number(car.km).toLocaleString('he-IL')} ק"מ</div></div>` : ''}
+      ${car.purchase ? `<div class="info-row"><div class="info-label">עלות קנייה</div><div class="info-val">${fmtAmount(car.purchase)}</div></div>` : ''}
       <button class="btn-primary" onclick="openCarModal('${selCarId}')">✏️ ערוך פרטי רכב</button>
       <button class="btn-danger"  onclick="confirmDeleteCar()">🗑️ מחק רכב</button>`;
   }
@@ -648,6 +671,10 @@ function openCarModal(editId = null) {
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">עלות קניית הרכב (₪)</label>
+      <input class="form-input" id="f-purchase" type="number" placeholder="80000" inputmode="decimal" value="${esc(car.purchase||'')}">
+    </div>
+    <div class="form-group">
       <label class="form-label">צבע</label>
       <div class="color-options">${colorOpts}</div>
       <input type="hidden" id="f-color" value="${esc(selColor)}">
@@ -669,8 +696,9 @@ function submitCarForm(editId) {
     year:  document.getElementById('f-year').value.trim(),
     plate: document.getElementById('f-plate').value.trim(),
     owner: document.getElementById('f-owner').value.trim(),
-    km:    document.getElementById('f-km').value.trim(),
-    color: document.getElementById('f-color').value,
+    km:       document.getElementById('f-km').value.trim(),
+    purchase: document.getElementById('f-purchase').value.trim(),
+    color:    document.getElementById('f-color').value,
   };
   if (editId) db.ref(`cars/${editId}`).update(data);
   else db.ref('cars').push(data);
@@ -679,24 +707,44 @@ function submitCarForm(editId) {
 
 // ── Maintenance modal (with history) ──
 function openMaintModal(key, label) {
-  const nextDate = (maint[selCarId] || {})[key]?.date || '';
+  serviceItems = [];
+  const nextDate   = (maint[selCarId] || {})[key]?.date || '';
   const histEntries = getHist(selCarId, key);
+  const isService  = key === 'service';
 
   const histRows = histEntries.length
     ? histEntries.map(([id, h]) => {
         const year = h.date ? h.date.substring(0,4) : '—';
+        const itemsHtml = (h.items && h.items.length) ? `
+          <div class="hist-items">
+            ${h.items.map(it => `
+              <div class="hist-item-row">
+                <span class="hist-item-name">${esc(it.name)}</span>
+                <span class="hist-item-price">${it.price ? fmtAmount(it.price) : ''}</span>
+              </div>`).join('')}
+          </div>` : '';
         return `
-          <div class="hist-row">
-            <div class="hist-year">${year}</div>
-            <div class="hist-info">
-              <div class="hist-date">${formatDate(h.date)}</div>
-              ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
+          <div class="hist-row" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="hist-year">${year}</div>
+              <div class="hist-info">
+                <div class="hist-date">${formatDate(h.date)}</div>
+                ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
+              </div>
+              <div class="hist-cost">${h.cost ? fmtAmount(h.cost) : ''}</div>
+              <button class="hist-del" onclick="deleteHistEntry('${key}','${id}')">🗑️</button>
             </div>
-            <div class="hist-cost">${h.cost ? fmtAmount(h.cost) : ''}</div>
-            <button class="hist-del" onclick="deleteHistEntry('${key}','${id}')">🗑️</button>
+            ${itemsHtml}
           </div>`;
       }).join('')
     : `<div class="no-hist">אין רשומות היסטוריות עדיין</div>`;
+
+  const serviceSection = isService ? `
+    <div style="margin-top:12px">
+      <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">תכולת הטיפול</div>
+      <div id="service-items-list"></div>
+      <button type="button" class="add-hist-btn" onclick="addServiceItem()" style="margin-top:2px">+ הוסף פריט</button>
+    </div>` : '';
 
   makeOverlay(`
     <button class="modal-close" onclick="closeModal()">✕</button>
@@ -715,13 +763,14 @@ function openMaintModal(key, label) {
           <input class="form-input" id="m-done" type="date" value="${todayStr()}" style="background:white">
         </div>
         <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">עלות (₪)</label>
+          <label class="form-label">עלות כללית (₪)</label>
           <input class="form-input" id="m-cost" type="number" placeholder="0" inputmode="decimal" style="background:white">
         </div>
       </div>
+      ${serviceSection}
       <div class="form-group" style="margin-top:10px;margin-bottom:0">
         <label class="form-label">הערה</label>
-        <input class="form-input" id="m-note" placeholder="שם מוסך, חברת ביטוח..." style="background:white">
+        <input class="form-input" id="m-note" placeholder="${isService ? 'שם מוסך...' : 'שם מוסך, חברת ביטוח...'}" style="background:white">
       </div>
     </div>
 
@@ -735,6 +784,50 @@ function openMaintModal(key, label) {
       ${histRows}
     </div>
   `);
+
+  if (isService) renderServiceItems();
+}
+
+// ── Service items helpers ──
+function renderServiceItems() {
+  const list = document.getElementById('service-items-list');
+  if (!list) return;
+  list.innerHTML = serviceItems.map((item, i) => `
+    <div class="service-item">
+      <input class="form-input" placeholder="שם הפריט (החלפת שמן...)"
+             value="${esc(item.name||'')}"
+             oninput="serviceItems[${i}].name=this.value">
+      <input class="form-input price-inp" type="number" placeholder="₪"
+             value="${item.price||''}" inputmode="decimal"
+             oninput="serviceItems[${i}].price=this.value;calcServiceTotal()">
+      <button class="service-item-del" onclick="removeServiceItem(${i})">✕</button>
+    </div>`).join('');
+
+  const total = serviceItems.reduce((s, it) => s + (parseFloat(it.price)||0), 0);
+  list.innerHTML += `
+    <div class="service-total-row">
+      <span>סה"כ תכולת טיפול</span>
+      <span id="service-total-amount">${total > 0 ? fmtAmount(total) : '—'}</span>
+    </div>`;
+}
+
+function addServiceItem() {
+  serviceItems.push({ name:'', price:'' });
+  renderServiceItems();
+}
+
+function removeServiceItem(i) {
+  serviceItems.splice(i, 1);
+  renderServiceItems();
+  calcServiceTotal();
+}
+
+function calcServiceTotal() {
+  const total = serviceItems.reduce((s, it) => s + (parseFloat(it.price)||0), 0);
+  const el = document.getElementById('service-total-amount');
+  if (el) el.textContent = total > 0 ? fmtAmount(total) : '—';
+  const costEl = document.getElementById('m-cost');
+  if (costEl && total > 0) costEl.value = total;
 }
 
 function submitMaintForm(key) {
@@ -746,13 +839,24 @@ function submitMaintForm(key) {
   if (nextDate) {
     db.ref(`cars_maint/${selCarId}/${key}`).set({ date: nextDate });
   }
-  // Save to history only if cost or note is filled (date alone isn't meaningful for history)
-  if (cost || note) {
-    db.ref(`cars_hist/${selCarId}/${key}`).push({
+
+  const validItems = serviceItems.filter(it => it.name.trim());
+  const hasData = cost || note || validItems.length;
+
+  if (hasData) {
+    const record = {
       date: doneDate || todayStr(),
       cost: cost ? parseFloat(cost) : null,
       note: note || null,
-    });
+    };
+    if (validItems.length) {
+      record.items = validItems.map(it => ({
+        name:  it.name.trim(),
+        price: it.price ? parseFloat(it.price) : null,
+      }));
+    }
+    db.ref(`cars_hist/${selCarId}/${key}`).push(record);
+    serviceItems = [];
   }
   closeModal();
 }

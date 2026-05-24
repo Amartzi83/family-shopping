@@ -706,11 +706,20 @@ function toggleDark() {
 }
 function openDetail(id) {
   selCarId = id; activeTab = 'maint'; view = 'detail';
-  window.scrollTo(0,0); render();
+  window.scrollTo(0,0);
+  history.pushState({ carDetail: id }, '');
+  render();
 }
 function goBack() {
-  view = 'list'; window.scrollTo(0,0); render();
+  history.back(); // popstate handler below does the actual UI update
 }
+
+window.addEventListener('popstate', () => {
+  if (view === 'detail') {
+    view = 'list'; selCarId = null;
+    window.scrollTo(0,0); render();
+  }
+});
 function switchTab(tab) {
   activeTab = tab; render();
 }

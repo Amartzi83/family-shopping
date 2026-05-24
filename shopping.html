@@ -19,7 +19,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;-webkit-tap-highlight-color:transparent}
-body{font-family:'Rubik',sans-serif;background:#fafaf9;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased;transition:background .3s}
+body{font-family:'Rubik',sans-serif;background:#eef2f7;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased;transition:background .3s}
 input:focus,textarea:focus{outline:none}
 button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-appearance:none}
 input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
@@ -38,15 +38,20 @@ input[type=number]{-moz-appearance:textfield}
 #loading .icon{font-size:36px;animation:pulse 1.5s infinite}
 #loading .text{font-size:13px;color:#94a3b8}
 
-.header{background:linear-gradient(135deg,#1e293b,#334155);padding:22px 18px 14px;color:white}
-.header h1{font-size:20px;font-weight:700;letter-spacing:-.5px}
-.header-top{display:flex;justify-content:space-between;align-items:center}
-.header-btns{display:flex;gap:5px}
-.header-btn{background:rgba(255,255,255,.08);color:white;border-radius:9px;padding:6px 9px;font-size:12px;transition:all .2s}
-.header-btn.active{background:rgba(255,255,255,.25)}
-.members-row{display:flex;gap:6px;margin-top:12px}
-.member-btn{border-radius:20px;padding:5px 14px;font-size:13px;transition:all .2s;border:1.5px solid transparent}
-.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-left:5px;vertical-align:middle}
+.header{background:white;padding:14px 18px 12px;position:sticky;top:0;z-index:50;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.header-title{font-size:18px;font-weight:700;color:#1e293b;text-align:center;flex:1}
+.header-icon-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;background:#f1f5f9;flex-shrink:0;border:none;cursor:pointer;font-family:inherit;transition:background .15s}
+.header-icon-btn:active{background:#e2e8f0}
+.members-row{display:flex;gap:16px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.members-row::-webkit-scrollbar{display:none}
+.member-avatar-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;cursor:pointer}
+.member-avatar{width:58px;height:58px;border-radius:50%;border:3px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;position:relative;transition:all .2s;overflow:hidden}
+.member-avatar img{width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:50%}
+.member-me-badge{position:absolute;top:-2px;right:-2px;background:#2563eb;color:white;font-size:9px;font-weight:700;padding:2px 5px;border-radius:6px;line-height:1.2}
+.member-name{font-size:11px;font-weight:500;color:#64748b;text-align:center}
+.member-name.is-me{color:#2563eb;font-weight:700}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;vertical-align:middle}
 .sync-dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e88}
 .sync-dot.off{background:#ef4444}
 
@@ -117,7 +122,11 @@ input[type=number]{-moz-appearance:textfield}
 /* Dark Mode */
 body.dark{background:#0f172a;color:#e2e8f0}
 .dark *{border-color:#334155}
-.dark .header{background:linear-gradient(135deg,#0f172a,#1e293b)}
+.dark .header{background:#1e293b;box-shadow:0 1px 8px rgba(0,0,0,.3)}
+.dark .header-title{color:#e2e8f0}
+.dark .header-icon-btn{background:#334155;color:#e2e8f0}
+.dark .member-name{color:#94a3b8}
+.dark .member-name.is-me{color:#93c5fd}
 .dark .panel{background:#1e293b!important;box-shadow:0 2px 12px rgba(0,0,0,.3);color:#e2e8f0}
 .dark .panel *{color:#cbd5e1!important}
 .dark .info-bar{background:#1e293b!important;color:#94a3b8}
@@ -152,7 +161,6 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .toast{background:#334155;color:#e2e8f0}
 .dark .dnd-placeholder{background:#334155!important;border-color:#6366f1!important}
 .dark .hist-total{background:#064e3b!important;color:#34d399!important}
-.dark .member-btn{color:#cbd5e1!important}
 .dark .export-btn{opacity:.9}
 .dark .add-btn{opacity:.9}
 .dark .add-section div[style*="background:white"]{background:#1e293b!important;border-color:#334155!important}
@@ -178,7 +186,7 @@ if(typeof firebase==='undefined'){
   throw new Error("Firebase SDK not loaded");
 }
 const firebaseConfig = {
-  apiKey: "AlzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
+  apiKey: "AIzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
   authDomain: "family-shopping-9f8a6.firebaseapp.com",
   databaseURL: "https://family-shopping-9f8a6-default-rtdb.firebaseio.com",
   projectId: "family-shopping-9f8a6",
@@ -193,6 +201,13 @@ const db = firebase.database();
 // CONSTANTS
 // ============================================
 const MEMBERS = ["אבא","אמא","גפן","שקד"];
+
+const MEMBER_PHOTOS = {
+  "אבא": "img/abba.png",
+  "אמא": "img/mama.jpg",
+  "גפן": "img/gafen.jpg",
+  "שקד": "img/shaked.jpg",
+};
 
 const CATEGORIES = [
   {id:"short",label:"טווח קצר",icon:"🥛",color:"#22c55e",bg:"#f0fdf4",disappear:true,hasQty:true},
@@ -733,27 +748,30 @@ function render(){
   // Header
   h+=`<div class="header">
     <div class="header-top">
-      <div>
-        <h1>🛒 קניות משפחתיות</h1>
-        <div style="font-size:12px;margin-top:3px;font-weight:600;color:${mc(S.me).darkText||'#e2e8f0'};">${esc(S.me)} <span class="sync-dot ${S.connected?'on':'off'}"></span></div>
+      <div style="display:flex;gap:6px;">
+        <button class="header-icon-btn" onclick="toggleP('hist')" style="${S.showHist?'background:#e0e7ff;color:#6366f1;':''}" title="היסטוריה">📋</button>
+        <button class="header-icon-btn" onclick="toggleP('exp')" style="${S.showExp?'background:#e0e7ff;color:#6366f1;':''}" title="ייצוא">📤</button>
       </div>
-      <div class="header-btns">
-        <button class="header-btn ${S.showHist?'active':''}" onclick="toggleP('hist')">📋</button>
-        <button class="header-btn ${S.showExp?'active':''}" onclick="toggleP('exp')">📤</button>
-        <button class="header-btn" onclick="toggleDark()">${document.body.classList.contains("dark")?"☀️":"🌙"}</button>
-        <button class="header-btn" onclick="location.href='index.html'">🏠</button>
+      <div class="header-title">🛒 קניות <span class="sync-dot ${S.connected?'on':'off'}"></span></div>
+      <div style="display:flex;gap:6px;">
+        <button class="header-icon-btn" onclick="toggleDark()">${dk?"☀️":"🌙"}</button>
+        <button class="header-icon-btn" onclick="location.href='index.html'">🏠</button>
       </div>
     </div>
     <div class="members-row">
       ${MEMBERS.map((m,i)=>{
-        const cl=MC[i];const isMe=m===S.me;
-        return`<button class="member-btn" onclick="pickMe('${esc(m)}')" style="
-          background:${dk?cl.darkBg:cl.bg};
-          color:${dk?cl.darkText:cl.text};
-          font-weight:${isMe?700:500};
-          border:2px solid ${isMe?cl.border:'transparent'};
-          ${isMe?'box-shadow:0 0 8px '+cl.border+'66;':'opacity:.7;'}
-        ">${esc(m)}</button>`;
+        const cl=MC[i]; const isMe=m===S.me;
+        const photo=MEMBER_PHOTOS[m];
+        const avatarInner=photo
+          ?`<img src="${photo}" alt="${esc(m)}">`
+          :`<span style="color:${dk?cl.darkText:cl.text};font-size:18px;font-weight:700;">${m.charAt(0)}</span>`;
+        return`<div class="member-avatar-wrap" onclick="pickMe('${esc(m)}')">
+          <div class="member-avatar" style="background:${dk?cl.darkBg:cl.bg};border-color:${isMe?cl.border:'transparent'};${isMe?'box-shadow:0 0 0 3px '+cl.border+'44;':''}">
+            ${avatarInner}
+            ${isMe?'<span class="member-me-badge">אני</span>':''}
+          </div>
+          <span class="member-name ${isMe?'is-me':''}">${esc(m)}</span>
+        </div>`;
       }).join("")}
     </div>
   </div>`;

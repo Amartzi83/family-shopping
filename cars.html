@@ -11,6 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;-webkit-tap-highlight-color:transparent}
@@ -258,6 +259,30 @@ input,select,textarea{font-family:inherit}
 .hist-item-name{flex:1}
 .hist-item-price{font-weight:600;color:#334155;flex-shrink:0}
 
+/* ── File docs ── */
+.doc-section{margin-top:14px;padding-top:14px;border-top:1.5px solid #e2e8f0}
+.doc-section-title{font-size:11px;font-weight:700;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.doc-item{display:flex;align-items:center;gap:8px;background:#f0fdf9;border-radius:10px;padding:9px 12px;margin-bottom:6px;border:1px solid #99f6e4}
+.doc-name{font-size:12px;color:#134e4a;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-decoration:none}
+.doc-name:hover{text-decoration:underline}
+.doc-del{font-size:13px;color:#fca5a5;padding:3px 8px;flex-shrink:0}
+.doc-upload-btn{width:100%;background:#f8fafc;border:2px dashed #d1fae5;border-radius:12px;padding:12px;font-size:13px;color:#0f766e;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .15s;font-weight:600;font-family:inherit}
+.doc-upload-btn:active{background:#f0fdf9;border-color:#0f766e}
+
+/* ── Expense free-text notes ── */
+.exp-freetext{background:#fffbeb;border:1.5px solid #fde68a;border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:background .15s}
+.exp-freetext:active{background:#fef9c3}
+.exp-freetext-label{font-size:11px;font-weight:700;color:#92400e;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.exp-freetext-body{font-size:13px;color:#78350f;line-height:1.6;white-space:pre-wrap}
+.exp-freetext-ta{width:100%;border:none;background:transparent;font-size:13px;color:#78350f;font-family:inherit;line-height:1.6;resize:none;min-height:72px;outline:none}
+
+/* ── Km badge in history ── */
+.hist-km{display:inline-block;font-size:10px;color:#0f766e;background:#f0fdf9;border-radius:6px;padding:1px 7px;font-weight:600;margin-top:2px}
+
+/* ── Calendar reminder toggle ── */
+.cal-reminder-row{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:9px 12px;background:#f0fdf9;border-radius:10px;border:1px solid #99f6e4;cursor:pointer}
+.cal-reminder-row label{font-size:13px;color:#0f766e;font-weight:600;cursor:pointer;flex:1}
+
 /* ── Loading ── */
 .ldot{width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;animation:pulse 1.2s ease infinite}
 .ldot:nth-child(2){animation-delay:.2s}
@@ -300,6 +325,15 @@ body.dark .service-total-row{background:#134e4a;border-color:#0f766e;color:#5eea
 body.dark .hist-items{border-color:#334155}
 body.dark .hist-item-row{color:#64748b}
 body.dark .hist-item-price{color:#94a3b8}
+body.dark .doc-item{background:#134e4a;border-color:#0f766e}
+body.dark .doc-name{color:#5eead4}
+body.dark .doc-upload-btn{background:#0f172a;border-color:#134e4a;color:#5eead4}
+body.dark .exp-freetext{background:#1e293b;border-color:#334155}
+body.dark .exp-freetext-label{color:#94a3b8}
+body.dark .exp-freetext-body{color:#cbd5e1}
+body.dark .exp-freetext-ta{color:#cbd5e1}
+body.dark .cal-reminder-row{background:#134e4a;border-color:#0f766e}
+body.dark .cal-reminder-row label{color:#5eead4}
 </style>
 </head>
 <body>
@@ -327,9 +361,10 @@ const db = firebase.database();
 const CAR_COLORS = ['#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#64748b','#f97316','#1e293b'];
 const EXPENSE_TYPES = ['דלק','טסט','טיפול תקופתי','תיקון','ביטוח','כביש אגרה','חניה','שטיפה','אחר'];
 const MAINT_ITEMS = [
-  { key:'test',    label:'טסט שנתי',      icon:'🔍', hint:'בדיקת רכב שנתית חובה' },
-  { key:'ins',     label:'ביטוח חובה',   icon:'📋', hint:'ביטוח חובה רכב' },
-  { key:'comp',    label:'ביטוח מקיף',   icon:'🛡️', hint:'ביטוח מקיף רכב' },
+  { key:'test',    label:'טסט שנתי',      icon:'🔍', hint:'בדיקת רכב שנתית חובה',  allowFiles:true },
+  { key:'ins',     label:'ביטוח חובה',   icon:'📋', hint:'ביטוח חובה רכב',         allowFiles:true },
+  { key:'comp',    label:'ביטוח מקיף',   icon:'🛡️', hint:'ביטוח מקיף רכב',         allowFiles:true },
+  { key:'license', label:'רשיון רכב',    icon:'📄', hint:'חידוש רשיון רכב',         allowFiles:true },
   { key:'service', label:'טיפול תקופתי',  icon:'🔧', hint:'טיפול שוטף כולל שמן ומסנן' },
   { key:'battery', label:'החלפת מצבר',   icon:'🔋', hint:'מצבר — בדיקה או החלפה' },
   { key:'gearoil', label:'שמן גיר',       icon:'⚙️', hint:'החלפת שמן תיבת הילוכים' },
@@ -340,13 +375,16 @@ const MAINT_ITEMS = [
 let cars     = {};
 let maint    = {};
 let expenses = {};
-let hist     = {};   // { carId: { key: { id: { date, cost, note } } } }
+let hist     = {};   // { carId: { key: { id: { date, cost, note, km } } } }
+let docs     = {};   // { carId: { key: { docId: { name, url, path, uploadedAt } } } }
+let carNotes = {};   // { carId: { text } }
 let view          = 'list';
 let selCarId      = null;
-let serviceItems  = [];   // [{ name, price }] for טיפול תקופתי modal
+let serviceItems  = [];
 let activeTab  = 'maint';
 let isDark     = localStorage.getItem('cars-dark') === '1';
 let loaded     = 0;
+let uploadingKey  = null;
 
 // ── Helpers ──
 const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
@@ -420,6 +458,14 @@ function loadData() {
   db.ref('cars_hist').on('value', snap => {
     hist = snap.val() || {};
     loaded |= 8; render();
+  });
+  db.ref('cars_docs').on('value', snap => {
+    docs = snap.val() || {};
+    if (view === 'detail') renderDetail();
+  });
+  db.ref('cars_notes').on('value', snap => {
+    carNotes = snap.val() || {};
+    if (view === 'detail') renderDetail();
   });
 }
 
@@ -543,6 +589,7 @@ function renderDetail() {
 
   } else if (activeTab === 'expenses') {
     const total = carExps.reduce((s,[,e]) => s + (Number(e.amount)||0), 0);
+    const noteText = (carNotes[selCarId] || {}).text || '';
     const expRows = carExps.length
       ? carExps.map(([id,e]) => `
           <div class="exp-item">
@@ -557,6 +604,13 @@ function renderDetail() {
       : `<div class="no-exp">אין הוצאות רשומות עדיין</div>`;
 
     tabContent = `
+      <div class="exp-freetext" id="exp-freetext-wrap" onclick="editCarNote()">
+        <div class="exp-freetext-label">
+          📝 הערות ותכנון עתידי
+          <span style="font-size:10px;font-weight:400;opacity:.7;">✏️ לחץ לעריכה</span>
+        </div>
+        <div class="exp-freetext-body">${noteText ? esc(noteText) : '<span style="color:#d97706;font-style:italic;font-size:12px;">הוסף הערות, טיפולים עתידיים מתוכננים, תזכורות...</span>'}</div>
+      </div>
       <div class="total-bar">
         <div class="total-label">סה"כ הוצאות</div>
         <div class="total-amount">${fmtAmount(total)}</div>
@@ -703,12 +757,13 @@ function submitCarForm(editId) {
   closeModal();
 }
 
-// ── Maintenance modal (with history) ──
+// ── Maintenance modal (with history, km, calendar, files) ──
 function openMaintModal(key, label) {
   serviceItems = [];
-  const nextDate   = (maint[selCarId] || {})[key]?.date || '';
+  const nextDate    = (maint[selCarId] || {})[key]?.date || '';
   const histEntries = getHist(selCarId, key);
-  const isService  = key === 'service';
+  const isService   = key === 'service';
+  const allowFiles  = MAINT_ITEMS.find(i => i.key === key)?.allowFiles || false;
 
   const histRows = histEntries.length
     ? histEntries.map(([id, h]) => {
@@ -727,6 +782,7 @@ function openMaintModal(key, label) {
               <div class="hist-year">${year}</div>
               <div class="hist-info">
                 <div class="hist-date">${formatDate(h.date)}</div>
+                ${h.km ? `<div class="hist-km">⚙️ ${Number(h.km).toLocaleString()} ק"מ</div>` : ''}
                 ${h.note ? `<div class="hist-note">${esc(h.note)}</div>` : ''}
               </div>
               <div class="hist-cost">${h.cost ? fmtAmount(h.cost) : ''}</div>
@@ -744,6 +800,22 @@ function openMaintModal(key, label) {
       <button type="button" class="add-hist-btn" onclick="addServiceItem()" style="margin-top:2px">+ הוסף פריט</button>
     </div>` : '';
 
+  // Docs section
+  const carDocEntries = allowFiles ? Object.entries(((docs[selCarId] || {})[key]) || {}) : [];
+  const docsHtml = allowFiles ? `
+    <div class="doc-section">
+      <div class="doc-section-title">📎 מסמכים ואישורים</div>
+      ${carDocEntries.map(([id, d]) => `
+        <div class="doc-item">
+          <span style="font-size:20px">📄</span>
+          <a class="doc-name" href="${esc(d.url)}" target="_blank" onclick="event.stopPropagation()">${esc(d.name)}</a>
+          <button class="doc-del" onclick="deleteDoc('${key}','${id}','${esc(d.path||'')}')">🗑️</button>
+        </div>`).join('')}
+      <button class="doc-upload-btn" id="doc-upload-btn-${key}" onclick="triggerFileUpload('${key}')">
+        📎 העלה מסמך / קובץ
+      </button>
+    </div>` : '';
+
   makeOverlay(`
     <button class="modal-close" onclick="closeModal()">✕</button>
     <div class="modal-title">${label}</div>
@@ -751,6 +823,11 @@ function openMaintModal(key, label) {
     <div class="form-group">
       <label class="form-label">תאריך הבא / חידוש</label>
       <input class="form-input" id="m-next" type="date" value="${nextDate}">
+    </div>
+
+    <div class="cal-reminder-row" onclick="document.getElementById('m-cal').click()">
+      <input type="checkbox" id="m-cal" onclick="event.stopPropagation()" style="width:16px;height:16px;accent-color:#0f766e;flex-shrink:0;cursor:pointer">
+      <label for="m-cal">📅 הוסף תזכורת ליומן המשפחתי</label>
     </div>
 
     <div style="background:#f8fafc;border-radius:14px;padding:14px;margin-bottom:4px">
@@ -765,12 +842,18 @@ function openMaintModal(key, label) {
           <input class="form-input" id="m-cost" type="number" placeholder="0" inputmode="decimal" style="background:white">
         </div>
       </div>
+      <div class="form-group" style="margin-top:10px;margin-bottom:0">
+        <label class="form-label">ק"מ בביצוע הטיפול</label>
+        <input class="form-input" id="m-km" type="number" placeholder="לדוגמה: 85000" inputmode="numeric" style="background:white">
+      </div>
       ${serviceSection}
       <div class="form-group" style="margin-top:10px;margin-bottom:0">
         <label class="form-label">הערה</label>
         <input class="form-input" id="m-note" placeholder="${isService ? 'שם מוסך...' : 'שם מוסך, חברת ביטוח...'}" style="background:white">
       </div>
     </div>
+
+    ${docsHtml}
 
     <button class="btn-save" onclick="submitMaintForm('${key}')">💾 שמור</button>
 
@@ -833,19 +916,26 @@ function submitMaintForm(key) {
   const doneDate = document.getElementById('m-done').value;
   const cost     = document.getElementById('m-cost').value;
   const note     = document.getElementById('m-note').value.trim();
+  const km       = document.getElementById('m-km')?.value;
+  const addCal   = document.getElementById('m-cal')?.checked;
 
   if (nextDate) {
     db.ref(`cars_maint/${selCarId}/${key}`).set({ date: nextDate });
+    if (addCal) {
+      const item = MAINT_ITEMS.find(i => i.key === key);
+      addCalendarReminder(item?.label || key, nextDate);
+    }
   }
 
   const validItems = serviceItems.filter(it => it.name.trim());
-  const hasData = cost || note || validItems.length;
+  const hasData = cost || note || validItems.length || km;
 
   if (hasData) {
     const record = {
       date: doneDate || todayStr(),
       cost: cost ? parseFloat(cost) : null,
       note: note || null,
+      km:   km   ? parseInt(km)     : null,
     };
     if (validItems.length) {
       record.items = validItems.map(it => ({
@@ -865,9 +955,15 @@ function openAddHistModal(key, label) {
   makeOverlay(`
     <button class="modal-close" onclick="closeModal()">✕</button>
     <div class="modal-title">הוסף רשומה — ${label}</div>
-    <div class="form-group">
-      <label class="form-label">תאריך ביצוע</label>
-      <input class="form-input" id="h-date" type="date" value="${todayStr()}">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">תאריך ביצוע</label>
+        <input class="form-input" id="h-date" type="date" value="${todayStr()}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ק"מ בביצוע</label>
+        <input class="form-input" id="h-km" type="number" placeholder="85000" inputmode="numeric">
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">עלות (₪)</label>
@@ -885,11 +981,13 @@ function submitHistEntry(key) {
   const date = document.getElementById('h-date').value;
   const cost = document.getElementById('h-cost').value;
   const note = document.getElementById('h-note').value.trim();
+  const km   = document.getElementById('h-km')?.value;
   if (!date) return;
   db.ref(`cars_hist/${selCarId}/${key}`).push({
     date,
     cost: cost ? parseFloat(cost) : null,
     note: note || null,
+    km:   km   ? parseInt(km)     : null,
   });
   closeModal();
 }
@@ -958,9 +1056,91 @@ function confirmDeleteCar() {
   view = 'list'; selCarId = null; render();
 }
 
+// ── Calendar reminder ──
+function addCalendarReminder(label, date) {
+  const car = cars[selCarId] || {};
+  const title = `🚗 ${car.make||''} ${car.model||''} — ${label}`.trim();
+  db.ref('calendar/events').push({
+    title,
+    date,
+    allDay: true,
+    color: '#0f766e',
+    repeat: 'none',
+    addedAt: Date.now(),
+  });
+  toast('📅 תזכורת נוספה ליומן המשפחתי');
+}
+
+// ── File upload ──
+function triggerFileUpload(key) {
+  uploadingKey = key;
+  const fi = document.getElementById('car-file-input');
+  if (fi) fi.click();
+}
+
+async function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file || !uploadingKey || !selCarId) return;
+  const key = uploadingKey;
+  const btn = document.getElementById('doc-upload-btn-' + key);
+  if (btn) btn.textContent = '⏳ מעלה...';
+  try {
+    const storage = firebase.storage();
+    const path = `cars/${selCarId}/${key}/${Date.now()}_${file.name}`;
+    const ref = storage.ref(path);
+    await ref.put(file);
+    const url = await ref.getDownloadURL();
+    db.ref(`cars_docs/${selCarId}/${key}`).push({
+      name: file.name, url, path, uploadedAt: Date.now(),
+    });
+    toast('✅ המסמך הועלה בהצלחה');
+  } catch(e) {
+    toast('❌ שגיאה בהעלאת המסמך');
+    if (btn) btn.innerHTML = '📎 העלה מסמך / קובץ';
+  }
+  input.value = '';
+}
+
+function deleteDoc(key, docId, path) {
+  if (!confirm('למחוק מסמך זה?')) return;
+  if (path) { try { firebase.storage().ref(path).delete(); } catch(e) {} }
+  db.ref(`cars_docs/${selCarId}/${key}/${docId}`).remove();
+  const item = MAINT_ITEMS.find(i => i.key === key);
+  if (item) openMaintModal(key, item.label);
+}
+
+// ── Expense free-text notes ──
+function editCarNote() {
+  const wrap = document.getElementById('exp-freetext-wrap');
+  if (!wrap) return;
+  const noteText = (carNotes[selCarId] || {}).text || '';
+  wrap.onclick = null;
+  wrap.style.cursor = 'default';
+  wrap.innerHTML = `
+    <div class="exp-freetext-label">📝 הערות ותכנון עתידי</div>
+    <textarea id="car-note-ta" class="exp-freetext-ta"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+      placeholder="הוסף הערות, טיפולים מתוכננים, תזכורות...">${esc(noteText)}</textarea>
+    <button onclick="saveCarNote()" style="margin-top:8px;background:#0f766e;color:white;border-radius:10px;padding:8px 18px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:none;">💾 שמור הערות</button>
+  `;
+  const ta = document.getElementById('car-note-ta');
+  if (ta) { ta.focus(); ta.style.height = ta.scrollHeight + 'px'; }
+}
+
+function saveCarNote() {
+  const ta = document.getElementById('car-note-ta');
+  if (!ta || !selCarId) return;
+  db.ref(`cars_notes/${selCarId}`).set({ text: ta.value, updatedAt: Date.now() });
+  toast('✅ ההערות נשמרו');
+}
+
 // ── Init ──
 if (isDark) document.body.classList.add('dark');
 loadData();
+</script>
+<input type="file" id="car-file-input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.gif,.webp" style="display:none">
+<script>
+document.getElementById('car-file-input').addEventListener('change', function(){ handleFileUpload(this); });
 </script>
 </body>
 </html>

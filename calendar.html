@@ -42,15 +42,22 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .sync-dot.on{background:#22c55e}
 .sync-dot.off{background:#ef4444}
 
-/* ── Bottom nav ── */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:white;border-top:1px solid #e9eef5;display:flex;align-items:center;justify-content:space-around;padding:8px 0 18px;z-index:100}
-.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 18px;cursor:pointer;border-radius:14px;transition:all .15s;border:none;background:none;font-family:inherit}
-.nav-item .nav-icon{font-size:20px;transition:transform .2s}
-.nav-item .nav-lbl{font-size:10px;font-weight:600;color:#94a3b8;letter-spacing:.3px}
-.nav-item.active .nav-lbl{color:#6366f1}
-.nav-item.active .nav-icon{transform:scale(1.15)}
-.nav-fab{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);color:white;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px #6366f155;border:none;cursor:pointer;font-family:inherit;transition:transform .15s;margin-top:-18px}
-.nav-fab:active{transform:scale(.9)}
+/* ── FAB ── */
+.fab-add{position:fixed;bottom:26px;left:24px;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#818cf8);color:white;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px #6366f166;border:none;cursor:pointer;font-family:inherit;transition:transform .15s;z-index:100}
+.fab-add:active{transform:scale(.9)}
+.fab-search{position:fixed;bottom:26px;right:24px;width:60px;height:60px;border-radius:50%;background:white;color:#6366f1;font-size:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.12);border:none;cursor:pointer;font-family:inherit;transition:transform .15s;z-index:100}
+.fab-search:active{transform:scale(.9)}
+/* ── View pills ── */
+.view-pills{display:flex;gap:6px;padding:10px 14px 2px;overflow-x:auto;scrollbar-width:none}
+.view-pills::-webkit-scrollbar{display:none}
+.view-pill{border-radius:20px;padding:6px 16px;font-size:12px;font-weight:600;border:none;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
+.view-pill.active{background:#6366f1;color:white}
+.view-pill:not(.active){background:white;color:#64748b;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+/* ── Search bar ── */
+.search-bar{margin:8px 14px 0;position:relative}
+.search-input{width:100%;border:1.5px solid #e2e8f0;border-radius:12px;padding:10px 14px 10px 38px;font-size:14px;font-family:inherit;color:#1e293b;background:white;transition:border-color .15s}
+.search-input:focus{border-color:#6366f1}
+.search-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
 
 /* ── Calendar ── */
 .cal-wrap{background:white;margin:10px 12px 0;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden;padding-bottom:8px}
@@ -75,7 +82,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .cal-bar-more{font-size:8px;color:#94a3b8;text-align:center;line-height:1.2}
 
 /* ── Day panel ── */
-.cal-view-wrap{padding-bottom:110px}
+.cal-view-wrap{padding-bottom:100px}
 .day-panel{margin:10px 12px 0;background:white;border-radius:16px;padding:14px;box-shadow:0 2px 12px rgba(0,0,0,.05);animation:slideUp .2s ease}
 .day-panel-hd{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .add-day-btn{font-size:11px;color:#6366f1;font-weight:600;padding:5px 12px;background:#eef2ff;border-radius:20px;font-family:inherit;border:none;cursor:pointer}
@@ -92,7 +99,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .chip{border-radius:10px;padding:2px 8px;font-size:10px;font-weight:600}
 
 /* ── Upcoming / All list ── */
-.section{padding:10px 12px 120px}
+.section{padding:10px 12px 100px}
 .grp-lbl{font-size:11px;font-weight:700;color:#94a3b8;padding:10px 2px 5px;letter-spacing:.5px;text-transform:uppercase}
 .up-ev{background:white;border-radius:12px;padding:11px 12px;margin-bottom:7px;box-shadow:0 1px 6px rgba(0,0,0,.05);display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:all .15s;animation:slideUp .2s ease}
 .up-ev:active{transform:scale(.98)}
@@ -151,9 +158,9 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .header-icon-btn:active{background:#334155}
 .dark .member-name{color:#64748b}
 .dark .member-name.is-me{color:#818cf8}
-.dark .bottom-nav{background:#1a2236;border-top-color:#263349}
-.dark .nav-item .nav-lbl{color:#475569}
-.dark .nav-item.active .nav-lbl{color:#818cf8}
+.dark .fab-search{background:#1a2236;color:#818cf8;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.dark .view-pill:not(.active){background:#1a2236;color:#94a3b8}
+.dark .search-input{background:#1a2236;border-color:#334155;color:#e2e8f0}
 .dark .cal-wrap{background:#1a2236;box-shadow:0 2px 12px rgba(0,0,0,.3)}
 .dark .cal-title{color:#e2e8f0}
 .dark .cal-nav-btn{background:#263349;color:#94a3b8}
@@ -264,6 +271,8 @@ let S = {
   showForm:     false,
   editKey:      null,
   notifAsked:   localStorage.getItem("fcal-notif-asked") === "1",
+  showSearch:   false,
+  searchQ:      "",
 };
 
 // Form fields (plain object, mutated directly)
@@ -546,6 +555,9 @@ async function testNotif() {
 // ══════════════════════════════════════════
 // ACTIONS
 // ══════════════════════════════════════════
+function toggleSearch() { S.showSearch = !S.showSearch; if (!S.showSearch) S.searchQ = ''; render(); setTimeout(()=>document.getElementById('sq')?.focus(),80); }
+function setSearch(v) { S.searchQ = v; render(); }
+
 function pickMe(name) {
   S.me = name; localStorage.setItem("fcal-me", name);
   render();
@@ -701,31 +713,29 @@ function render() {
   </div>`;
 
 
-  if      (S.view === 'calendar') h += renderCalendar(isDk);
-  else if (S.view === 'upcoming') h += renderUpcoming(isDk);
-  else                            h += renderAll(isDk);
+  // ── View pills ──
+  h += `<div class="view-pills">
+    <button class="view-pill ${S.view==='calendar'?'active':''}" onclick="switchView('calendar')">📅 יומן</button>
+    <button class="view-pill ${S.view==='upcoming'?'active':''}" onclick="switchView('upcoming')">⏰ קרוב</button>
+    <button class="view-pill ${S.view==='all'?'active':''}" onclick="switchView('all')">📋 הכל</button>
+  </div>`;
 
-  // ── Bottom nav ──
+  // ── Search bar ──
+  if (S.showSearch) {
+    h += `<div class="search-bar">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="sq" type="search" placeholder="חפש אירוע..." value="${esc(S.searchQ)}" oninput="setSearch(this.value)">
+    </div>`;
+  }
+
+  if (S.view === 'calendar') h += renderCalendar(isDk);
+  else if (S.view === 'upcoming') h += renderUpcoming(isDk);
+  else h += renderAll(isDk);
+
+  // ── FABs ──
   if (!S.showForm) {
-    h += `<nav class="bottom-nav">
-      <button class="nav-item ${S.view==='calendar'?'active':''}" onclick="switchView('calendar')">
-        <span class="nav-icon">📅</span>
-        <span class="nav-lbl">יומן</span>
-      </button>
-      <button class="nav-item ${S.view==='upcoming'?'active':''}" onclick="switchView('upcoming')">
-        <span class="nav-icon">⏰</span>
-        <span class="nav-lbl">קרוב</span>
-      </button>
-      <button class="nav-fab" onclick="openForm('${S.selDate}')">＋</button>
-      <button class="nav-item ${S.view==='all'?'active':''}" onclick="switchView('all')">
-        <span class="nav-icon">📋</span>
-        <span class="nav-lbl">הכל</span>
-      </button>
-      <button class="nav-item" onclick="location.href='index.html'">
-        <span class="nav-icon">🏠</span>
-        <span class="nav-lbl">בית</span>
-      </button>
-    </nav>`;
+    h += `<button class="fab-add" onclick="openForm('${S.selDate}')">＋</button>`;
+    h += `<button class="fab-search" onclick="toggleSearch()">${S.showSearch ? '✕' : '🔍'}</button>`;
   }
 
   // ── Form ──
@@ -832,8 +842,10 @@ function renderCalendar(isDk) {
 
 // ── Upcoming view ──
 function renderUpcoming(isDk) {
-  const occs = upcomingOccs(60);
-  if (!occs.length) return `<div class="section"><div class="empty"><div class="empty-ic">⏰</div><div class="empty-tx">אין אירועים קרובים</div></div></div>`;
+  const q = S.searchQ.trim().toLowerCase();
+  let occs = upcomingOccs(60);
+  if (q) occs = occs.filter(ev => (ev.title||'').toLowerCase().includes(q) || (ev.note||'').toLowerCase().includes(q));
+  if (!occs.length) return `<div class="section"><div class="empty"><div class="empty-ic">⏰</div><div class="empty-tx">${q?'לא נמצאו תוצאות':'אין אירועים קרובים'}</div></div></div>`;
 
   const groups = {};
   for (const occ of occs) (groups[occ.occDate]=groups[occ.occDate]||[]).push(occ);
@@ -881,8 +893,10 @@ function renderUpcoming(isDk) {
 
 // ── All events view ──
 function renderAll(isDk) {
-  const all = [...S.events].sort((a,b)=>a.date.localeCompare(b.date));
-  if (!all.length) return `<div class="section"><div class="empty"><div class="empty-ic">📋</div><div class="empty-tx">אין אירועים עדיין</div></div></div>`;
+  const q = S.searchQ.trim().toLowerCase();
+  let all = [...S.events].sort((a,b)=>a.date.localeCompare(b.date));
+  if (q) all = all.filter(ev => (ev.title||'').toLowerCase().includes(q) || (ev.note||'').toLowerCase().includes(q));
+  if (!all.length) return `<div class="section"><div class="empty"><div class="empty-ic">📋</div><div class="empty-tx">${q?'לא נמצאו תוצאות':'אין אירועים עדיין'}</div></div></div>`;
   return `<div class="section">${all.map(ev=>evCard(ev,isDk)).join('')}</div>`;
 }
 

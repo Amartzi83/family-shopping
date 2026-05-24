@@ -1121,6 +1121,22 @@ function confirmDeleteCar() {
   view = 'list'; selCarId = null; render();
 }
 
+// ── Toast ──
+function toast(msg, duration = 2800) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed', bottom:'30px', left:'50%', transform:'translateX(-50%)',
+    background: isDark ? '#334155' : '#1e293b', color:'white',
+    padding:'10px 22px', borderRadius:'12px', fontSize:'14px', fontWeight:'500',
+    zIndex:'9999', boxShadow:'0 4px 16px rgba(0,0,0,.25)',
+    fontFamily:'Rubik,sans-serif', whiteSpace:'nowrap',
+    animation:'fadeIn .25s ease',
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
+
 // ── Car photo upload ──
 function triggerCarPhoto() {
   document.getElementById('car-photo-input').click();
@@ -1129,23 +1145,36 @@ function triggerCarPhoto() {
 async function handleCarPhotoUpload(input) {
   const file = input.files[0];
   if (!file || !selCarId) return;
+
   const btn = document.querySelector('.car-photo-btn');
   if (btn) btn.textContent = '⏳';
+  toast('⏳ מעלה תמונה...');
+
   try {
     const storage = firebase.storage();
+
     // Delete old photo if exists
     const oldPath = (cars[selCarId] || {}).photoPath;
-    if (oldPath) { try { storage.ref(oldPath).delete(); } catch(e) {} }
+    if (oldPath) {
+      try { await storage.ref(oldPath).delete(); } catch(e) {}
+    }
 
-    const path = `cars/${selCarId}/photo_${Date.now()}`;
-    const ref  = storage.ref(path);
-    await ref.put(file);
-    const url  = await ref.getDownloadURL();
-    db.ref(`cars/${selCarId}`).update({ photoUrl: url, photoPath: path });
-    toast('✅ תמונת הרכב עודכנה');
-  } catch(e) {
-    toast('❌ שגיאה בהעלאת התמונה');
+    const storePath = `cars/${selCarId}/photo_${Date.now()}`;
+    const storageRef = storage.ref(storePath);
+    const snapshot = await storageRef.put(file);
+    const url = await snapshot.ref.getDownloadURL();
+
+    await db.ref(`cars/${selCarId}`).update({ photoUrl: url, photoPath: storePath });
     if (btn) btn.textContent = '📷';
+    toast('✅ תמונת הרכב עודכנה בהצלחה');
+  } catch(e) {
+    console.error('Photo upload error:', e);
+    if (btn) btn.textContent = '📷';
+    if (e.code === 'storage/unauthorized') {
+      toast('❌ אין הרשאה — עדכן חוקי Firebase Storage ל-allow read, write: if true');
+    } else {
+      toast('❌ שגיאה: ' + (e.message || e.code || 'לא ידוע'));
+    }
   }
   input.value = '';
 }

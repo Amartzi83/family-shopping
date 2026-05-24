@@ -14,7 +14,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;-webkit-tap-highlight-color:transparent}
-body{font-family:'Rubik',sans-serif;background:#f1f5f9;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased}
+body{font-family:'Rubik',sans-serif;background:#eef2f7;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased}
 button{cursor:pointer;border:none;background:none;font-family:inherit}
 input,select,textarea{font-family:inherit}
 
@@ -25,19 +25,15 @@ input,select,textarea{font-family:inherit}
 
 /* ── Header ── */
 .header{
-  background:linear-gradient(145deg,#0f766e 0%,#0369a1 100%);
-  padding:36px 20px 20px;color:white;
-  position:relative;overflow:hidden;
+  background:white;padding:14px 18px 10px;
+  position:sticky;top:0;z-index:50;
+  box-shadow:0 1px 8px rgba(0,0,0,.06);
 }
-.header::before{
-  content:'';position:absolute;inset:0;
-  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-.header-top{display:flex;justify-content:space-between;align-items:center;position:relative}
-.header h1{font-size:22px;font-weight:700;margin-top:12px;position:relative}
-.header-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:3px;position:relative}
-.header-btn{background:rgba(255,255,255,.12);border-radius:10px;padding:7px 12px;font-size:13px;color:white;transition:background .15s;font-weight:500}
-.header-btn:active{background:rgba(255,255,255,.25)}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.header-title{font-size:18px;font-weight:700;color:#1e293b;text-align:center;flex:1}
+.header-sub{font-size:12px;color:#94a3b8;text-align:center;padding-bottom:6px}
+.header-icon-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;background:#f1f5f9;flex-shrink:0;border:none;cursor:pointer;font-family:inherit;transition:background .15s}
+.header-icon-btn:active{background:#e2e8f0}
 .header-actions{display:flex;gap:6px}
 
 /* ── Car list ── */
@@ -88,16 +84,14 @@ input,select,textarea{font-family:inherit}
 /* ── Detail header ── */
 .detail-header{
   background:linear-gradient(145deg,#0f766e,#0369a1);
-  padding:22px 20px 0;color:white;position:relative;overflow:hidden;
+  padding:16px 18px 0;color:white;position:relative;
 }
-.detail-header::before{
-  content:'';position:absolute;inset:0;
-  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-.detail-top{display:flex;justify-content:space-between;align-items:center;position:relative}
-.detail-name{font-size:21px;font-weight:700;margin-top:10px;position:relative}
-.detail-plate{font-size:13px;color:rgba(255,255,255,.7);font-family:monospace;letter-spacing:.8px;position:relative;margin-top:2px}
-.detail-owner{font-size:12px;color:rgba(255,255,255,.55);position:relative;margin-top:2px}
+.detail-top{display:flex;justify-content:space-between;align-items:center}
+.detail-icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;background:rgba(255,255,255,.18);border:none;cursor:pointer;font-family:inherit;color:white;transition:background .15s;flex-shrink:0}
+.detail-icon-btn:active{background:rgba(255,255,255,.32)}
+.detail-name{font-size:20px;font-weight:700;margin-top:10px}
+.detail-plate{font-size:13px;color:rgba(255,255,255,.7);font-family:monospace;letter-spacing:.8px;margin-top:2px}
+.detail-owner{font-size:12px;color:rgba(255,255,255,.55);margin-top:2px}
 
 /* ── Tabs ── */
 .tabs{display:flex;position:relative;margin-top:16px}
@@ -271,6 +265,10 @@ input,select,textarea{font-family:inherit}
 
 /* ── Dark mode ── */
 body.dark{background:#0f172a}
+body.dark .header{background:#1e293b;box-shadow:0 1px 8px rgba(0,0,0,.3)}
+body.dark .header-title{color:#e2e8f0}
+body.dark .header-sub{color:#64748b}
+body.dark .header-icon-btn{background:#334155;color:#e2e8f0}
 body.dark .car-card,
 body.dark .maint-item,
 body.dark .exp-item,
@@ -314,7 +312,7 @@ body.dark .hist-item-price{color:#94a3b8}
 
 <script>
 const firebaseConfig = {
-  apiKey: "AlzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
+  apiKey: "AIzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
   authDomain: "family-shopping-9f8a6.firebaseapp.com",
   databaseURL: "https://family-shopping-9f8a6-default-rtdb.firebaseio.com",
   projectId: "family-shopping-9f8a6",
@@ -475,11 +473,11 @@ function renderList() {
   document.getElementById('root').innerHTML = `
     <div class="header">
       <div class="header-top">
-        <button class="header-btn" onclick="location.href='index.html'">← בית</button>
-        <button class="header-btn" onclick="toggleDark()">${isDark?'☀️':'🌙'}</button>
+        <button class="header-icon-btn" onclick="location.href='index.html'">🏠</button>
+        <div class="header-title">🚗 רכבים משפחתיים</div>
+        <button class="header-icon-btn" onclick="toggleDark()">${isDark?'☀️':'🌙'}</button>
       </div>
-      <h1>🚗 רכבים משפחתיים</h1>
-      <div class="header-sub">${entries.length} רכבים${totalAlerts > 0 ? ` · ${totalAlerts} התראות` : ''}</div>
+      ${entries.length > 0 ? `<div class="header-sub">${entries.length} רכבים${totalAlerts > 0 ? ` · ⚠️ ${totalAlerts} התראות` : ' · הכל תקין ✓'}</div>` : ''}
     </div>
     <div class="section">${cards}</div>
     ${entries.length ? '<div style="height:84px"></div>' : ''}
@@ -582,8 +580,8 @@ function renderDetail() {
   document.getElementById('root').innerHTML = `
     <div class="detail-header">
       <div class="detail-top">
-        <button class="header-btn" onclick="goBack()">← חזרה</button>
-        <button class="header-btn" onclick="toggleDark()">${isDark?'☀️':'🌙'}</button>
+        <button class="detail-icon-btn" onclick="goBack()">←</button>
+        <button class="detail-icon-btn" onclick="toggleDark()">${isDark?'☀️':'🌙'}</button>
       </div>
       <div class="detail-name">${esc(car.make||'')} ${esc(car.model||'')}</div>
       <div class="detail-plate">🔢 ${esc(car.plate||'ללא לוחית')}</div>

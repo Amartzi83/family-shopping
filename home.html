@@ -60,38 +60,33 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
   margin-top:-60px;
 }
 
-/* ── Top bar ── */
-.topbar{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:16px 20px 0;
-  animation:fadeIn .6s ease;
+/* ── Header overlaid on photo ── */
+.photo-header{
+  position:absolute;top:0;left:0;right:0;
+  padding:18px 20px 16px;
+  background:rgba(255,255,255,0);
+  backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);
+  z-index:2;
+  animation:fadeIn .5s ease;
 }
-.topbar-title{
-  font-size:28px;font-weight:800;color:white;
-  text-shadow:0 2px 12px rgba(0,0,0,.4);
-  letter-spacing:-.5px;
+.photo-title{
+  font-size:26px;font-weight:800;color:white;
+  text-shadow:0 2px 14px rgba(0,0,0,.5);
+  letter-spacing:-.5px;margin-bottom:2px;
 }
-.topbar-sub{font-size:13px;color:rgba(255,255,255,.7);font-weight:400;margin-top:2px}
-.dark-btn{
-  width:40px;height:40px;border-radius:50%;
-  background:rgba(255,255,255,.15);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.2);
-  font-size:18px;display:flex;align-items:center;justify-content:center;
-  color:white;transition:all .2s;flex-shrink:0;
+.photo-sub{
+  font-size:13px;color:rgba(255,255,255,.85);font-weight:400;
+  text-shadow:0 1px 6px rgba(0,0,0,.5);
+  margin-bottom:10px;
 }
-.dark-btn:active{transform:scale(.9)}
-
-/* ── Date pill ── */
-.date-pill{
-  margin:14px 20px 0;
+.photo-date{
   display:inline-flex;align-items:center;gap:6px;
-  background:rgba(255,255,255,.18);
-  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,.25);
-  border-radius:20px;padding:7px 16px;
+  background:rgba(255,255,255,0);
+  border:1px solid rgba(255,255,255,.4);
+  border-radius:20px;padding:5px 14px;
   font-size:12px;font-weight:600;color:white;
-  animation:slideUp .4s ease .1s both;
+  text-shadow:0 1px 4px rgba(0,0,0,.4);
+  backdrop-filter:blur(0px);-webkit-backdrop-filter:blur(0px);
 }
 
 /* ── Glass cards ── */
@@ -178,6 +173,11 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 <div class="bg">
   <img src="img/family.jpg" alt="המשפחה שלנו">
   <div class="bg-overlay"></div>
+  <div class="photo-header">
+    <div class="photo-title">המשפחה שלנו 🏠</div>
+    <div class="photo-sub">הכל במקום אחד</div>
+    <div class="photo-date" id="ph-date"></div>
+  </div>
 </div>
 
 <div id="root">
@@ -258,18 +258,10 @@ function render() {
         </div>`).join('')
     : `<div class="no-events">אין אירועים היום 🎉</div>`;
 
+  document.getElementById("ph-date").textContent = "📅 " + dateLabel;
+
   document.getElementById("root").innerHTML = `
     <div class="page">
-
-      <div class="topbar">
-        <div>
-          <div class="topbar-title">המשפחה שלנו 🏠</div>
-          <div class="topbar-sub">הכל במקום אחד</div>
-        </div>
-      </div>
-
-      <div class="date-pill">📅 ${dateLabel}</div>
-
       <div class="cards">
         <div class="glass-card" onclick="location.href='calendar.html'">
           <div class="gc-icon">📅</div>

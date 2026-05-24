@@ -688,22 +688,6 @@ function render() {
     </div>
   </div>`;
 
-  // ── Notification banner ──
-  if ('Notification' in window && Notification.permission === 'default') {
-    h += `<div class="notif-bar">
-      <span>🔔 אפשר התראות כדי לקבל תזכורות</span>
-      <button onclick="askNotifPermission()">אפשר</button>
-    </div>`;
-  } else if ('Notification' in window && Notification.permission === 'granted') {
-    h += `<div class="notif-bar" style="background:#f0fdf4;border-color:#86efac;justify-content:space-between;">
-      <span style="color:#166534;">✅ התראות מופעלות</span>
-      <button onclick="testNotif()" style="background:#22c55e;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;font-family:inherit;">בדוק עכשיו</button>
-    </div>`;
-  } else if ('Notification' in window && Notification.permission === 'denied') {
-    h += `<div class="notif-bar" style="background:#fef2f2;border-color:#fca5a5;">
-      <span style="color:#991b1b;">❌ התראות חסומות — פתח הגדרות דפדפן לאפשר</span>
-    </div>`;
-  }
 
   if      (S.view === 'calendar') h += renderCalendar(isDk);
   else if (S.view === 'upcoming') h += renderUpcoming(isDk);

@@ -29,20 +29,24 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-/* ── Full-screen background ── */
+/* ── Photo at top ── */
 .bg{
-  position:fixed;inset:0;max-width:520px;margin:0 auto;
-  background:url('img/family.jpg') center 20% / cover no-repeat;
-  z-index:0;
+  position:relative;z-index:0;
+  width:100%;
+  background:#111;
+}
+.bg img{
+  display:block;width:100%;height:auto;
+  object-fit:contain;
 }
 .bg-overlay{
-  position:fixed;inset:0;max-width:520px;margin:0 auto;
+  position:absolute;inset:0;
   background:linear-gradient(
     to bottom,
-    rgba(0,0,0,.25) 0%,
-    rgba(0,0,0,.15) 35%,
-    rgba(0,0,0,.55) 70%,
-    rgba(0,0,0,.82) 100%
+    rgba(0,0,0,.08) 0%,
+    rgba(0,0,0,.0)  40%,
+    rgba(0,0,0,.6)  75%,
+    rgba(17,17,17,1) 100%
   );
   z-index:1;
 }
@@ -50,15 +54,16 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 /* ── Scroll container ── */
 .page{
   position:relative;z-index:2;
-  min-height:100vh;
   display:flex;flex-direction:column;
   padding-bottom:30px;
+  background:linear-gradient(to bottom, transparent 0%, #111 18%);
+  margin-top:-60px;
 }
 
 /* ── Top bar ── */
 .topbar{
   display:flex;justify-content:space-between;align-items:center;
-  padding:52px 20px 0;
+  padding:16px 20px 0;
   animation:fadeIn .6s ease;
 }
 .topbar-title{
@@ -170,11 +175,13 @@ button{cursor:pointer;border:none;background:none;font-family:inherit}
 </head>
 <body>
 
-<div class="bg"></div>
-<div class="bg-overlay"></div>
+<div class="bg">
+  <img src="img/family.jpg" alt="המשפחה שלנו">
+  <div class="bg-overlay"></div>
+</div>
 
 <div id="root">
-  <div class="loading-wrap">
+  <div class="loading-wrap" style="position:fixed;inset:0;">
     <div class="ldot"></div><div class="ldot"></div><div class="ldot"></div>
   </div>
 </div>

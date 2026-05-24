@@ -211,7 +211,6 @@ const MEMBER_PHOTOS = {
 
 const CATEGORIES = [
   {id:"short",label:"טווח קצר",icon:"🥛",color:"#22c55e",bg:"#f0fdf4",disappear:true,hasQty:true},
-  {id:"medium",label:"טווח בינוני",icon:"🥩",color:"#f59e0b",bg:"#fffbeb",disappear:true,hasQty:true},
   {id:"long",label:"טווח ארוך",icon:"🧴",color:"#6366f1",bg:"#eef2ff",disappear:false,hasQty:true},
   {id:"vlong",label:"טווח ארוך מאוד",icon:"🏷️",color:"#ec4899",bg:"#fdf2f8",disappear:false,hasQty:false},
   {id:"general",label:"כללי",icon:"📝",color:"#64748b",bg:"#f8fafc",disappear:true,hasQty:false},
@@ -245,7 +244,7 @@ const UNITS = ["יח׳","ק״ג","ליטר","גרם","חבילה","קרטון"];
 // STATE
 // ============================================
 let S = {
-  lists:{short:[],medium:[],long:[],vlong:[],general:[],vouchers:[]},
+  lists:{short:[],long:[],vlong:[],general:[],vouchers:[]},
   history:[],
   me: localStorage.getItem("fshop-me") || "",
   tab:"short",
@@ -272,7 +271,7 @@ function sortItems(a){return[...a].sort((x,y)=>sortOrd(x.name)-sortOrd(y.name));
 
 function exportTxt(items,label,vl,plain){
   if(plain){
-    // short+medium: no title, no numbering
+    // short: no title, no numbering
     return items.map(it=>{
       const u=it.unit&&it.unit!=="יח׳"?` ${it.unit}`:"";
       const q=(it.quantity&&it.quantity>1)?` ${it.quantity}${u}`:"";
@@ -297,7 +296,7 @@ function startListeners(){
   db.ref("lists").on("value",snap=>{
     const d=snap.val()||{};
     const parse=o=>o?Object.entries(o).map(([k,v])=>({...v,_k:k})).sort((a,b)=>(a.ord!=null&&b.ord!=null)?a.ord-b.ord:(a.addedAt||0)-(b.addedAt||0)):[];
-    S.lists={short:parse(d.short),medium:parse(d.medium),long:parse(d.long),vlong:parse(d.vlong),general:parse(d.general),vouchers:parse(d.vouchers)};
+    S.lists={short:parse(d.short),long:parse(d.long),vlong:parse(d.vlong),general:parse(d.general),vouchers:parse(d.vouchers)};
     S.loaded=true;render();
   });
   db.ref("history").on("value",snap=>{
@@ -385,8 +384,8 @@ function markDone(c,k,itemJson){
   const item=JSON.parse(itemJson);
   const ct=cat(c);
   if(ct.disappear){
-    // Save to history for short/medium
-    if(c==="short"||c==="medium"){
+    // Save to history for short
+    if(c==="short"){
       const e={name:item.name,category:c,by:S.me,at:Date.now(),addedBy:item.addedBy,price:0};
       if(item.quantity)e.quantity=item.quantity;
       if(item.unit)e.unit=item.unit;
@@ -410,7 +409,7 @@ function markDone(c,k,itemJson){
 }
 
 function trimShortHistory(){
-  const shortHist=S.history.filter(h=>h.category==="short"||h.category==="medium");
+  const shortHist=S.history.filter(h=>h.category==="short");
   if(shortHist.length>30){
     const toRemove=shortHist.slice(30);
     toRemove.forEach(h=>fbRemove(`history/${h._k}`));
@@ -651,27 +650,10 @@ document.addEventListener("mousemove",dndMove);
 document.addEventListener("mouseup",dndEnd);
 document.addEventListener("contextmenu",e=>{if(dnd.active||dnd.timer)e.preventDefault();});
 
-function ramiLevyTxt(items){
-  return items.map(it=>{
-    const q=(it.quantity&&it.quantity>1)?it.quantity:"";
-    const u=(it.unit&&it.unit!=="יח׳")?it.unit:"";
-    const suffix=[q,u].filter(Boolean).join(" ");
-    return suffix?`${it.name} ${suffix}`:it.name;
-  }).join("\n");
-}
-
 function doExport(m){
   const c=cat(S.tab);
   const items=S.tab==="short"?sortItems(S.lists[S.tab]):S.lists[S.tab];
-  if(m==="rami"){
-    // Collect all short+medium items for Rami Levy
-    const all=[...sortItems(S.lists.short),...S.lists.medium];
-    if(all.length===0){toast("❌ אין פריטים לייצוא");S.showExp=false;render();return;}
-    const t=ramiLevyTxt(all);
-    navigator.clipboard.writeText(t).then(()=>toast("✅ הרשימה הועתקה — הדביקו בקניה מהירה ברמי לוי")).catch(()=>{});
-    S.showExp=false;render();return;
-  }
-  const isPlain=S.tab==="short"||S.tab==="medium";
+  const isPlain=S.tab==="short";
   const t=exportTxt(items,c.label,S.tab==="vlong"||S.tab==="general",isPlain);
   if(m==="wa")window.open(`https://wa.me/?text=${encodeURIComponent(t)}`,"_blank");
   else navigator.clipboard.writeText(t).then(()=>toast("✅ הרשימה הועתקה")).catch(()=>{});
@@ -740,7 +722,7 @@ function render(){
   const items=S.tab==="short"?sortItems(raw):raw;
   displayedItems=items;
   const hL=S.history.filter(h=>h.category==="long"||h.category==="vlong"||h.category==="vouchers");
-  const hS=S.history.filter(h=>h.category==="short"||h.category==="medium").slice(0,30);
+  const hS=S.history.filter(h=>h.category==="short").slice(0,30);
   const tot=hL.filter(h=>h.category!=="vouchers").reduce((s,h)=>s+(h.price||0),0);
 
   let h="";
@@ -783,10 +765,6 @@ function render(){
         <button class="export-btn" style="background:#25D366" onclick="doExport('wa')">📱 וואצאפ</button>
         <button class="export-btn" style="background:#64748b" onclick="doExport('copy')">📋 העתק</button>
       </div>
-      <button onclick="doExport('rami')" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#e63946,#d62839);color:white;border-radius:10px;padding:11px;font-size:13px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;">
-        🛒 ייצוא לרמי לוי — קניה מהירה
-        <span style="font-size:10px;opacity:.7;font-weight:400;">(טווח קצר + בינוני)</span>
-      </button>
     </div>`;
   }
 

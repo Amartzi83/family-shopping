@@ -6,127 +6,182 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1e293b">
-<title>משפחה</title>
+<title>משפחה שלנו</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{height:100%;-webkit-tap-highlight-color:transparent}
-body{font-family:'Rubik',sans-serif;background:#f1f5f9;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased}
+html,body{height:100%;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Rubik',sans-serif;
+  max-width:520px;margin:0 auto;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  background:#111;
+}
 button{cursor:pointer;border:none;background:none;font-family:inherit}
 
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes popIn{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-.header{
-  background:linear-gradient(145deg,#1e293b 0%,#0f4c75 100%);
-  padding:36px 24px 28px;
-  color:white;
-  text-align:center;
-  position:relative;
-  overflow:hidden;
+/* ── Full-screen background ── */
+.bg{
+  position:fixed;inset:0;max-width:520px;margin:0 auto;
+  background:url('img/family.jpg') center 20% / cover no-repeat;
+  z-index:0;
 }
-.header::before{
-  content:'';position:absolute;inset:0;
-  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-}
-.header-emoji{font-size:48px;margin-bottom:8px;display:block;animation:popIn .5s ease}
-.header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:4px}
-.header-sub{font-size:13px;color:rgba(255,255,255,.6);font-weight:400}
-.header-date{
-  display:inline-block;margin-top:10px;
-  background:rgba(255,255,255,.12);
-  border-radius:20px;padding:5px 16px;
-  font-size:12px;font-weight:500;color:rgba(255,255,255,.85);
+.bg-overlay{
+  position:fixed;inset:0;max-width:520px;margin:0 auto;
+  background:linear-gradient(
+    to bottom,
+    rgba(0,0,0,.25) 0%,
+    rgba(0,0,0,.15) 35%,
+    rgba(0,0,0,.55) 70%,
+    rgba(0,0,0,.82) 100%
+  );
+  z-index:1;
 }
 
-/* App cards */
-.cards{padding:20px 16px;display:flex;flex-direction:column;gap:14px}
+/* ── Scroll container ── */
+.page{
+  position:relative;z-index:2;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  padding-bottom:30px;
+}
 
-.app-card{
-  border-radius:18px;padding:22px 20px;
-  display:flex;align-items:center;gap:16px;
-  text-decoration:none;
-  transition:transform .15s, box-shadow .15s;
-  animation:slideUp .3s ease both;
+/* ── Top bar ── */
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:52px 20px 0;
+  animation:fadeIn .6s ease;
+}
+.topbar-title{
+  font-size:28px;font-weight:800;color:white;
+  text-shadow:0 2px 12px rgba(0,0,0,.4);
+  letter-spacing:-.5px;
+}
+.topbar-sub{font-size:13px;color:rgba(255,255,255,.7);font-weight:400;margin-top:2px}
+.dark-btn{
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(255,255,255,.15);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.2);
+  font-size:18px;display:flex;align-items:center;justify-content:center;
+  color:white;transition:all .2s;flex-shrink:0;
+}
+.dark-btn:active{transform:scale(.9)}
+
+/* ── Date pill ── */
+.date-pill{
+  margin:14px 20px 0;
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.18);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:20px;padding:7px 16px;
+  font-size:12px;font-weight:600;color:white;
+  animation:slideUp .4s ease .1s both;
+}
+
+/* ── Glass cards ── */
+.cards{
+  padding:24px 16px 0;
+  display:flex;flex-direction:column;gap:14px;
+  animation:slideUp .4s ease .15s both;
+}
+
+.glass-card{
+  border-radius:22px;
+  padding:20px 18px;
+  background:rgba(255,255,255,.14);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.22);
+  display:flex;align-items:center;gap:14px;
   cursor:pointer;
-  box-shadow:0 4px 20px rgba(0,0,0,.1);
+  transition:transform .15s, background .2s;
   position:relative;overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.18);
 }
-.app-card:active{transform:scale(.97)}
-.app-card::after{
-  content:'‹';position:absolute;left:18px;top:50%;transform:translateY(-50%);
-  font-size:22px;color:rgba(255,255,255,.5);font-weight:300;
+.glass-card:active{transform:scale(.97)}
+.glass-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.08) 0%,transparent 60%);
+  pointer-events:none;
 }
-.app-card:nth-child(1){animation-delay:.05s}
-.app-card:nth-child(2){animation-delay:.12s}
+.gc-icon{font-size:42px;flex-shrink:0;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
+.gc-info{flex:1;min-width:0}
+.gc-title{font-size:18px;font-weight:700;color:white;margin-bottom:3px;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.gc-desc{font-size:12px;color:rgba(255,255,255,.65);line-height:1.4}
+.gc-badge{
+  background:rgba(255,255,255,.25);border-radius:12px;
+  padding:3px 10px;font-size:11px;font-weight:700;color:white;
+  flex-shrink:0;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.2);
+}
+.gc-arrow{
+  font-size:20px;color:rgba(255,255,255,.4);flex-shrink:0;
+  font-weight:300;
+}
 
-.card-icon{font-size:44px;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.2))}
-.card-info{flex:1;min-width:0}
-.card-title{font-size:19px;font-weight:700;color:white;margin-bottom:3px}
-.card-desc{font-size:12px;color:rgba(255,255,255,.7);line-height:1.4}
-.card-badge{
-  position:absolute;top:14px;left:52px;
-  background:rgba(255,255,255,.25);
-  border-radius:10px;padding:2px 8px;
-  font-size:10px;font-weight:700;color:white;
+/* ── Today's events glass panel ── */
+.today-panel{
+  margin:18px 16px 0;
+  background:rgba(255,255,255,.13);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:22px;padding:18px 16px;
+  animation:slideUp .4s ease .25s both;
+  box-shadow:0 8px 32px rgba(0,0,0,.15);
 }
-
-/* Today's events */
-.today-section{margin:0 16px;animation:slideUp .3s ease .2s both}
-.today-hd{font-size:13px;font-weight:700;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.today-hd{
+  font-size:13px;font-weight:700;color:rgba(255,255,255,.9);
+  margin-bottom:12px;display:flex;align-items:center;gap:6px;
+}
 .today-ev{
-  background:white;border-radius:12px;padding:11px 14px;
-  margin-bottom:6px;border-right:4px solid #6366f1;
-  box-shadow:0 1px 6px rgba(0,0,0,.05);
+  border-radius:13px;padding:11px 13px;margin-bottom:7px;
+  background:rgba(255,255,255,.1);
+  border-right:4px solid #6366f1;
   display:flex;align-items:center;gap:10px;
-  cursor:pointer;transition:transform .15s;
+  cursor:pointer;transition:all .15s;
+  border-top:1px solid rgba(255,255,255,.1);
 }
-.today-ev:active{transform:scale(.98)}
-.ev-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.ev-name{font-size:14px;font-weight:600;color:#1e293b;flex:1}
-.ev-time{font-size:11px;color:#94a3b8;font-weight:500}
+.today-ev:last-child{margin-bottom:0}
+.today-ev:active{transform:scale(.98);background:rgba(255,255,255,.18)}
+.ev-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ev-name{font-size:14px;font-weight:600;color:white;flex:1}
+.ev-time{font-size:11px;color:rgba(255,255,255,.6);font-weight:500}
 .no-events{
-  background:white;border-radius:12px;padding:14px 16px;
-  text-align:center;color:#cbd5e1;font-size:13px;
-  box-shadow:0 1px 6px rgba(0,0,0,.04);
+  text-align:center;color:rgba(255,255,255,.5);font-size:13px;
+  padding:10px 0;
 }
 
 /* Loading dots */
-.ldot{width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block;animation:pulse 1.2s ease infinite}
+.ldot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.5);display:inline-block;animation:pulse 1.2s ease infinite}
 .ldot:nth-child(2){animation-delay:.2s}
 .ldot:nth-child(3){animation-delay:.4s}
-
-/* Dark mode */
-body.dark{background:#0f172a}
-.dark .header{background:linear-gradient(145deg,#0f172a 0%,#0c2e4a 100%)}
-.dark .today-ev{background:#1e293b;color:#e2e8f0}
-.dark .ev-name{color:#e2e8f0}
-.dark .no-events{background:#1e293b;color:#475569}
-.dark .today-hd{color:#64748b}
-
-.dark-toggle{
-  position:absolute;top:18px;left:18px;
-  background:rgba(255,255,255,.1);border-radius:9px;
-  padding:6px 10px;font-size:15px;border:none;cursor:pointer;
-}
+.loading-wrap{display:flex;justify-content:center;align-items:center;height:100vh;gap:8px}
 </style>
 </head>
 <body>
 
+<div class="bg"></div>
+<div class="bg-overlay"></div>
+
 <div id="root">
-  <div style="display:flex;justify-content:center;align-items:center;height:100vh;gap:6px;">
+  <div class="loading-wrap">
     <div class="ldot"></div><div class="ldot"></div><div class="ldot"></div>
   </div>
 </div>
 
 <script>
 const firebaseConfig = {
-  apiKey: "AlzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
+  apiKey: "AIzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
   authDomain: "family-shopping-9f8a6.firebaseapp.com",
   databaseURL: "https://family-shopping-9f8a6-default-rtdb.firebaseio.com",
   projectId: "family-shopping-9f8a6",
@@ -144,13 +199,16 @@ function ds(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'
 function pd(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
 const esc = s => s?String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):"";
 
-let todayEvents = [];
+let todayEvents  = [];
 let shoppingCount = 0;
+let dataReady    = false;
 
 function getOccurrences(ev, dateStr) {
-  const base = pd(ev.date);
+  const base   = pd(ev.date);
   const target = pd(dateStr);
+  if (ev.endDate && pd(ev.endDate) < target) return false;
   if (!ev.repeat || ev.repeat==='none') return base.getTime()===target.getTime();
+  if (ev.repeat==='range') return base<=target && pd(ev.endDate||ev.date)>=target;
   if (base > target) return false;
   const diff = Math.round((target-base)/86400000);
   if (ev.repeat==='daily')   return true;
@@ -162,39 +220,30 @@ function getOccurrences(ev, dateStr) {
 
 function loadData() {
   const todayStr = ds(new Date());
-
   db.ref("calendar/events").once("value", snap => {
     const d = snap.val()||{};
-    todayEvents = Object.values(d).filter(ev => getOccurrences(ev, todayStr))
-      .sort((a,b)=>{
-        if(a.allDay!==b.allDay) return a.allDay?-1:1;
-        return (a.time||'').localeCompare(b.time||'');
-      });
+    todayEvents = Object.values(d).filter(ev=>getOccurrences(ev,todayStr))
+      .sort((a,b)=>{ if(a.allDay!==b.allDay)return a.allDay?-1:1; return (a.time||'').localeCompare(b.time||''); });
+    dataReady = true;
     render();
   });
-
   db.ref("lists/short").once("value", snap => {
-    const d = snap.val()||{};
-    shoppingCount = Object.keys(d).length;
+    shoppingCount = Object.keys(snap.val()||{}).length;
     render();
   });
 }
 
 function toggleDark() {
-  document.body.classList.toggle("dark");
-  const d = document.body.classList.contains("dark");
-  localStorage.setItem("fhome-dark", d?"1":"0");
-  document.querySelector('meta[name="theme-color"]').content = d?"#0f172a":"#1e293b";
+  // Not needed with photo bg — just a visual hint
   render();
 }
 
 function render() {
   const now = new Date();
-  const isDk = document.body.classList.contains("dark");
-  const dateLabel = `יום ${DAYS_HE[now.getDay()]}, ${now.getDate()} ב${MONTHS_HE[now.getMonth()]} ${now.getFullYear()}`;
+  const dateLabel = `יום ${DAYS_HE[now.getDay()]}  •  ${now.getDate()} ב${MONTHS_HE[now.getMonth()]} ${now.getFullYear()}`;
 
   const evCards = todayEvents.length
-    ? todayEvents.map(ev => `
+    ? todayEvents.map(ev=>`
         <div class="today-ev" onclick="location.href='calendar.html'" style="border-right-color:${ev.color||'#6366f1'}">
           <div class="ev-dot" style="background:${ev.color||'#6366f1'}"></div>
           <div class="ev-name">${esc(ev.title)}</div>
@@ -203,45 +252,45 @@ function render() {
     : `<div class="no-events">אין אירועים היום 🎉</div>`;
 
   document.getElementById("root").innerHTML = `
-    <div class="header">
-      <button class="dark-toggle" onclick="toggleDark()">${isDk?"☀️":"🌙"}</button>
-      <span class="header-emoji">🏠</span>
-      <h1>המשפחה שלנו</h1>
-      <div class="header-sub">הכל במקום אחד</div>
-      <div class="header-date">📅 ${dateLabel}</div>
-    </div>
+    <div class="page">
 
-    <div class="cards">
-      <div class="app-card" onclick="location.href='shopping.html'"
-        style="background:linear-gradient(135deg,#1e293b,#334155);">
-        <div class="card-icon">🛒</div>
-        <div class="card-info">
-          <div class="card-title">קניות משפחתיות</div>
-          <div class="card-desc">רשימות קניות, שוברים ותווים, היסטוריה</div>
+      <div class="topbar">
+        <div>
+          <div class="topbar-title">המשפחה שלנו 🏠</div>
+          <div class="topbar-sub">הכל במקום אחד</div>
         </div>
-        ${shoppingCount>0?`<div class="card-badge">${shoppingCount} פריטים</div>`:''}
       </div>
 
-      <div class="app-card" onclick="location.href='calendar.html'"
-        style="background:linear-gradient(135deg,#4f46e5,#7c3aed);">
-        <div class="card-icon">📅</div>
-        <div class="card-info">
-          <div class="card-title">יומן משפחתי</div>
-          <div class="card-desc">אירועים, תזכורות ועוד — לכל בני המשפחה</div>
-        </div>
-        ${todayEvents.length>0?`<div class="card-badge">${todayEvents.length} היום</div>`:''}
-      </div>
-    </div>
+      <div class="date-pill">📅 ${dateLabel}</div>
 
-    <div class="today-section">
-      <div class="today-hd">📆 אירועים להיום</div>
-      ${evCards}
+      <div class="cards">
+        <div class="glass-card" onclick="location.href='calendar.html'">
+          <div class="gc-icon">📅</div>
+          <div class="gc-info">
+            <div class="gc-title">יומן משפחתי</div>
+            <div class="gc-desc">אירועים, תזכורות ועוד — לכל בני המשפחה</div>
+          </div>
+          ${todayEvents.length>0?`<div class="gc-badge">${todayEvents.length} היום</div>`:''}
+          <div class="gc-arrow">‹</div>
+        </div>
+
+        <div class="glass-card" onclick="location.href='shopping.html'">
+          <div class="gc-icon">🛒</div>
+          <div class="gc-info">
+            <div class="gc-title">קניות משפחתיות</div>
+            <div class="gc-desc">רשימות קניות, שוברים ותווים, היסטוריה</div>
+          </div>
+          ${shoppingCount>0?`<div class="gc-badge">${shoppingCount} פריטים</div>`:''}
+          <div class="gc-arrow">‹</div>
+        </div>
+      </div>
+
+      <div class="today-panel">
+        <div class="today-hd">📆 אירועים להיום</div>
+        ${evCards}
+      </div>
+
     </div>`;
-}
-
-if (localStorage.getItem("fhome-dark")==="1") {
-  document.body.classList.add("dark");
-  document.querySelector('meta[name="theme-color"]').content="#0f172a";
 }
 
 render();

@@ -690,8 +690,14 @@ function renderDetail() {
 }
 
 // ── Car image URL ──
+const LOCAL_CAR_IMAGES = {
+  'chevrolet-spark': 'img/cars/chevrolet-spark.png',
+  'kia-stonic':      'img/cars/kia-stonic.jpg',
+};
 function carImageUrl(make, model, year) {
   if (!make) return null;
+  const key = `${make.toLowerCase().replace(/\s+/g,'-')}-${(model||'').toLowerCase().replace(/\s+/g,'-')}`;
+  if (LOCAL_CAR_IMAGES[key]) return LOCAL_CAR_IMAGES[key];
   const mk  = encodeURIComponent((make  || '').toLowerCase().replace(/\s+/g,'-'));
   const md  = encodeURIComponent((model || '').toLowerCase().replace(/\s+/g,'-'));
   const yr  = year || new Date().getFullYear();

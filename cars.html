@@ -690,18 +690,23 @@ function renderDetail() {
 }
 
 // ── Car image URL ──
-const LOCAL_CAR_IMAGES = {
-  'chevrolet-spark': 'img/cars/chevrolet-spark.png',
-  'kia-stonic':      'img/cars/kia-stonic.jpg',
-};
+const LOCAL_CAR_RULES = [
+  { keywords: ['chevrolet','שברולט','chevy'], models: ['spark','ספארק'], img: 'img/cars/chevrolet-spark.png' },
+  { keywords: ['kia','קיה'],                  models: ['stonic','סטוניק'],  img: 'img/cars/kia-stonic.jpg'      },
+];
 function carImageUrl(make, model, year) {
   if (!make) return null;
-  const key = `${make.toLowerCase().replace(/\s+/g,'-')}-${(model||'').toLowerCase().replace(/\s+/g,'-')}`;
-  if (LOCAL_CAR_IMAGES[key]) return LOCAL_CAR_IMAGES[key];
-  const mk  = encodeURIComponent((make  || '').toLowerCase().replace(/\s+/g,'-'));
-  const md  = encodeURIComponent((model || '').toLowerCase().replace(/\s+/g,'-'));
+  const mk = (make  || '').toLowerCase();
+  const md = (model || '').toLowerCase();
+  for (const rule of LOCAL_CAR_RULES) {
+    if (rule.keywords.some(k => mk.includes(k)) && rule.models.some(m => md.includes(m))) {
+      return rule.img;
+    }
+  }
+  const mkE = encodeURIComponent(mk.replace(/\s+/g,'-'));
+  const mdE = encodeURIComponent(md.replace(/\s+/g,'-'));
   const yr  = year || new Date().getFullYear();
-  return `https://cdn.imagin.studio/getimage?customer=img&make=${mk}&modelFamily=${md}&modelYear=${yr}&angle=side-1&zoomType=fullscreen&width=600`;
+  return `https://cdn.imagin.studio/getimage?customer=img&make=${mkE}&modelFamily=${mdE}&modelYear=${yr}&angle=side-1&zoomType=fullscreen&width=600`;
 }
 
 // ── Dark / Nav ──

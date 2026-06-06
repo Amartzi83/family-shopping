@@ -219,6 +219,7 @@ const esc = s => s?String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(
 let todayEvents  = [];
 let shoppingCount = 0;
 let carsCount    = 0;
+let tasksCount   = 0;
 let dataReady    = false;
 
 function getOccurrences(ev, dateStr) {
@@ -251,6 +252,12 @@ function loadData() {
   });
   db.ref("cars").once("value", snap => {
     carsCount = Object.keys(snap.val()||{}).length;
+    render();
+  });
+  db.ref("tasks").once("value", snap => {
+    const d = snap.val()||{};
+    tasksCount = Object.values(d).reduce((sum, memberTasks) =>
+      sum + Object.values(memberTasks||{}).filter(t=>t.status==='todo').length, 0);
     render();
   });
 }
@@ -305,6 +312,16 @@ function render() {
             <div class="gc-desc">ניהול רכבים, טיפולים, ביטוח ורישיון</div>
           </div>
           ${carsCount>0?`<div class="gc-badge">${carsCount} רכבים</div>`:''}
+          <div class="gc-arrow">‹</div>
+        </div>
+
+        <div class="glass-card" onclick="location.href='tasks.html'">
+          <div class="gc-icon">✅</div>
+          <div class="gc-info">
+            <div class="gc-title">משימות</div>
+            <div class="gc-desc">מטלות ומשימות אישיות לכל בני המשפחה</div>
+          </div>
+          ${tasksCount>0?`<div class="gc-badge">${tasksCount} פתוחות</div>`:''}
           <div class="gc-arrow">‹</div>
         </div>
       </div>

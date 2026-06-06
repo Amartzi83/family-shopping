@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>משימות משפחתיות</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #1e293b;
+  --text2: #64748b;
+  --text3: #94a3b8;
+  --shadow: rgba(0,0,0,.06);
+  --accent: #6366f1;
+  --accent-bg: #eef2ff;
+}
+.dark {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface2: #0f172a;
+  --border: #334155;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #475569;
+  --shadow: rgba(0,0,0,.25);
+  --accent-bg: #1e1b4b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Rubik', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .25s, color .25s; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 10px;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.header-title { font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; }
+.sync-dot.offline { background: #ef4444; }
+.header-icon-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: var(--surface2); color: var(--text2); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+/* ── MEMBERS ── */
+.members-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.members-row::-webkit-scrollbar { display: none; }
+.member-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; flex-shrink: 0; border: none; background: none; padding: 0;
+}
+.member-avatar {
+  width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; font-weight: 700;
+  border: 3px solid transparent; transition: border-color .2s, transform .15s;
+  position: relative;
+}
+.member-btn.active .member-avatar { border-color: var(--mc-border); transform: scale(1.07); }
+.member-name { font-size: 11px; font-weight: 600; color: var(--text2); }
+.ani-badge {
+  position: absolute; top: -3px; left: -3px;
+  background: var(--mc-border); color: white; border-radius: 20px;
+  font-size: 9px; font-weight: 700; padding: 1px 5px;
+}
+
+/* ── TABS ── */
+.tabs-bar {
+  display: flex; gap: 8px; padding: 12px 16px 0;
+}
+.tab-btn {
+  flex: 1; padding: 9px 6px; border-radius: 12px; border: none;
+  font-family: 'Rubik', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; background: var(--surface); color: var(--text2);
+  border: 1.5px solid var(--border); transition: all .18s;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.tab-btn .tab-count {
+  font-size: 11px; font-weight: 400; opacity: .7;
+}
+.tab-btn.active-todo   { background: #1e3a8a; color: #93c5fd; border-color: #1d4ed8; }
+.tab-btn.active-doing  { background: #78350f; color: #fcd34d; border-color: #f59e0b; }
+.tab-btn.active-done   { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  display: flex; gap: 6px; padding: 10px 16px 0; overflow-x: auto;
+}
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-chip {
+  flex-shrink: 0; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text2); font-family: 'Rubik', sans-serif;
+  font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s;
+}
+.filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* ── CONTENT ── */
+.content { padding: 12px 16px 100px; max-width: 520px; margin: 0 auto; }
+
+/* ── TASK ITEM ── */
+.task-item {
+  background: var(--surface); border-radius: 13px; padding: 13px 14px;
+  margin-bottom: 9px; display: flex; gap: 11px; align-items: flex-start;
+  border-right: 4px solid transparent;
+  box-shadow: 0 2px 10px var(--shadow);
+  animation: slideIn .22s ease;
+  cursor: pointer;
+  transition: transform .12s;
+}
+.task-item:active { transform: scale(.98); }
+.task-item.pri-high  { border-right-color: #ef4444; }
+.task-item.pri-med   { border-right-color: #f59e0b; }
+.task-item.pri-low   { border-right-color: #22c55e; }
+.task-item.pri-none  { border-right-color: var(--border); }
+
+.check-wrap { flex-shrink: 0; padding-top: 1px; }
+.check-circle {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; cursor: pointer;
+}
+.check-circle:hover { border-color: #22c55e; }
+.check-circle.checked { background: #22c55e; border-color: #22c55e; }
+.check-circle.checked::after { content: '✓'; color: white; font-size: 12px; font-weight: 700; }
+.check-circle.doing { background: #f59e0b; border-color: #f59e0b; }
+.check-circle.doing::after { content: '⚡'; font-size: 10px; }
+
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; word-break: break-word; }
+.task-title.done-title { text-decoration: line-through; opacity: .45; }
+.task-desc { font-size: 12px; color: var(--text2); margin-bottom: 6px; line-height: 1.4; }
+.task-meta { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.meta-chip {
+  font-size: 10px; border-radius: 20px; padding: 2px 8px; font-weight: 600;
+}
+.chip-high  { background: #fee2e2; color: #dc2626; }
+.chip-med   { background: #ffedd5; color: #c2410c; }
+.chip-low   { background: #dcfce7; color: #15803d; }
+.chip-date  { background: var(--accent-bg); color: var(--accent); }
+.chip-cal   { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.chip-overdue { background: #fee2e2; color: #dc2626; }
+
+.task-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; }
+.member-chip {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text2);
+}
+.member-chip-dot { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+
+.move-btn {
+  font-size: 11px; padding: 4px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text2); cursor: pointer; font-family: 'Rubik', sans-serif;
+  font-weight: 600; transition: all .15s;
+}
+.move-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.task-delete {
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  background: transparent; color: var(--text3); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: color .15s;
+}
+.task-delete:hover { color: #ef4444; }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center; padding: 48px 20px; color: var(--text2);
+}
+.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; }
+
+/* ── FAB ── */
+.fab {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  color: white; border: none; border-radius: 16px; padding: 14px 28px;
+  font-family: 'Rubik', sans-serif; font-size: 15px; font-weight: 700;
+  cursor: pointer; box-shadow: 0 4px 20px rgba(99,102,241,.4);
+  display: flex; align-items: center; gap: 8px;
+  transition: transform .15s, box-shadow .15s;
+  z-index: 50;
+}
+.fab:hover { transform: translateX(-50%) scale(1.03); box-shadow: 0 6px 24px rgba(99,102,241,.5); }
+.fab:active { transform: translateX(-50%) scale(.97); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border-radius: 22px 22px 0 0;
+  padding: 20px 20px 36px; width: 100%; max-width: 520px;
+  transform: translateY(100%); transition: transform .3s cubic-bezier(.32,1,.4,1);
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 18px; }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; color: var(--text); }
+
+.field-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
+.field-input {
+  width: 100%; padding: 10px 13px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--surface2);
+  font-family: 'Rubik', sans-serif; font-size: 14px; color: var(--text);
+  outline: none; transition: border-color .15s; margin-bottom: 14px;
+}
+.field-input:focus { border-color: var(--accent); }
+textarea.field-input { resize: none; min-height: 70px; line-height: 1.5; }
+
+.field-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.field-row > * { flex: 1; margin-bottom: 0; }
+
+.priority-btns { display: flex; gap: 7px; margin-bottom: 14px; }
+.pri-btn {
+  flex: 1; padding: 8px 6px; border-radius: 10px; border: 2px solid var(--border);
+  background: var(--surface2); font-family: 'Rubik', sans-serif; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .15s; color: var(--text2);
+}
+.pri-btn.sel-high { background: #fee2e2; border-color: #ef4444; color: #dc2626; }
+.pri-btn.sel-med  { background: #ffedd5; border-color: #f59e0b; color: #c2410c; }
+.pri-btn.sel-low  { background: #dcfce7; border-color: #22c55e; color: #15803d; }
+.pri-btn.sel-none { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; background: var(--surface2); border-radius: 12px; margin-bottom: 14px;
+}
+.toggle-info { font-size: 13px; font-weight: 600; color: var(--text); }
+.toggle-sub  { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.toggle-switch {
+  width: 44px; height: 24px; border-radius: 12px; background: var(--border);
+  position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+}
+.toggle-switch.on { background: #6366f1; }
+.toggle-switch::after {
+  content: ''; position: absolute; top: 3px; right: 3px;
+  width: 18px; height: 18px; border-radius: 50%; background: white;
+  transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.toggle-switch.on::after { transform: translateX(-20px); }
+
+.modal-btns { display: flex; gap: 10px; margin-top: 6px; }
+.btn-cancel {
+  flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: var(--surface2); color: var(--text2); font-family: 'Rubik', sans-serif;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.btn-save {
+  flex: 2; padding: 12px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg, #6366f1, #3b82f6); color: white;
+  font-family: 'Rubik', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; box-shadow: 0 3px 12px rgba(99,102,241,.35);
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #1e293b; color: #e2e8f0; padding: 10px 20px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; z-index: 300; opacity: 0;
+  transition: all .3s; pointer-events: none; white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(8px); }
+}
+.task-item.removing { animation: slideOut .3s ease forwards; }
+
+.section-label {
+  font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: .5px;
+  text-transform: uppercase; padding: 12px 0 6px; margin-bottom: 4px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-title">
+      ✅ משימות
+      <span class="sync-dot" id="syncDot"></span>
+    </div>
+    <button class="header-icon-btn" id="darkBtn" title="מצב לילה">🌙</button>
+  </div>
+  <div class="members-row" id="membersRow"></div>
+</div>
+
+<div class="tabs-bar">
+  <button class="tab-btn active-todo" id="tabTodo" onclick="setTab('todo')">
+    📋 לעשות<span class="tab-count" id="cntTodo">0</span>
+  </button>
+  <button class="tab-btn" id="tabDoing" onclick="setTab('doing')">
+    ⚡ בתהליך<span class="tab-count" id="cntDoing">0</span>
+  </button>
+  <button class="tab-btn" id="tabDone" onclick="setTab('done')">
+    ✅ הושלם<span class="tab-count" id="cntDone">0</span>
+  </button>
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <button class="filter-chip active" data-filter="all" onclick="setFilter(this,'all')">הכל</button>
+  <button class="filter-chip" data-filter="high" onclick="setFilter(this,'high')">🔴 גבוהה</button>
+  <button class="filter-chip" data-filter="med"  onclick="setFilter(this,'med')">🟠 בינונית</button>
+  <button class="filter-chip" data-filter="low"  onclick="setFilter(this,'low')">🟢 נמוכה</button>
+  <button class="filter-chip" data-filter="cal"  onclick="setFilter(this,'cal')">🔔 יומן</button>
+</div>
+
+<div class="content" id="content"></div>
+
+<button class="fab" id="fabBtn">＋ משימה חדשה</button>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">משימה חדשה</div>
+
+    <label class="field-label">כותרת *</label>
+    <input class="field-input" id="fTitle" placeholder="מה צריך לעשות?" maxlength="80">
+
+    <label class="field-label">תיאור (אופציונלי)</label>
+    <textarea class="field-input" id="fDesc" placeholder="פרטים נוספים..."></textarea>
+
+    <label class="field-label">עדיפות</label>
+    <div class="priority-btns">
+      <button class="pri-btn" data-p="high" onclick="setPri('high')">🔴 גבוהה</button>
+      <button class="pri-btn" data-p="med"  onclick="setPri('med')">🟠 בינונית</button>
+      <button class="pri-btn" data-p="low"  onclick="setPri('low')">🟢 נמוכה</button>
+      <button class="pri-btn" data-p="none" onclick="setPri('none')">⬜ ללא</button>
+    </div>
+
+    <div class="field-row">
+      <div>
+        <label class="field-label">תאריך יעד</label>
+        <input class="field-input" id="fDate" type="date">
+      </div>
+      <div>
+        <label class="field-label">בשם מי</label>
+        <select class="field-input" id="fMember">
+          <option value="אמא">אמא</option>
+          <option value="אבא">אבא</option>
+          <option value="גפן">גפן</option>
+          <option value="שקד">שקד</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="toggle-row" id="calToggleRow">
+      <div>
+        <div class="toggle-info">🗓 הוסף תזכורת ביומן</div>
+        <div class="toggle-sub">יופיע ביומן המשפחתי המשותף</div>
+      </div>
+      <div class="toggle-switch" id="calToggle" onclick="toggleCal()"></div>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">ביטול</button>
+      <button class="btn-save" onclick="saveTask()">שמור משימה</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, set, update, remove, onValue, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
+  authDomain: "family-shopping-9f8a6.firebaseapp.com",
+  databaseURL: "https://family-shopping-9f8a6-default-rtdb.firebaseio.com",
+  projectId: "family-shopping-9f8a6",
+  storageBucket: "family-shopping-9f8a6.firebasestorage.app",
+  messagingSenderId: "7886163686",
+  appId: "1:7886163686:web:544391dd14dac18b2ab527"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── MEMBERS ──
+const MEMBERS = [
+  { name: 'אמא',  initial: 'מ', bg: '#fbcfe8', border: '#ec4899', text: '#be185d', dbg: '#831843', dtx: '#f9a8d4' },
+  { name: 'אבא',  initial: 'א', bg: '#bfdbfe', border: '#3b82f6', text: '#1d4ed8', dbg: '#1e3a8a', dtx: '#93c5fd' },
+  { name: 'גפן',  initial: 'ג', bg: '#a7f3d0', border: '#10b981', text: '#047857', dbg: '#064e3b', dtx: '#6ee7b7' },
+  { name: 'שקד',  initial: 'ש', bg: '#fde68a', border: '#f59e0b', text: '#b45309', dbg: '#78350f', dtx: '#fcd34d' },
+];
+
+// ── STATE ──
+let currentMember = MEMBERS[0];
+let currentTab    = 'todo';
+let currentFilter = 'all';
+let tasks         = {};          // { id: taskObj }
+let editingId     = null;
+let formPri       = 'none';
+let formCal       = false;
+let isDark        = localStorage.getItem('tasks-dark') === '1';
+
+// ── DARK MODE ──
+if (isDark) document.body.classList.add('dark');
+document.getElementById('darkBtn').addEventListener('click', () => {
+  isDark = !isDark;
+  document.body.classList.toggle('dark', isDark);
+  localStorage.setItem('tasks-dark', isDark ? '1' : '0');
+  document.getElementById('darkBtn').textContent = isDark ? '☀️' : '🌙';
+});
+if (isDark) document.getElementById('darkBtn').textContent = '☀️';
+
+// ── RENDER MEMBERS ──
+function renderMembers() {
+  const row = document.getElementById('membersRow');
+  row.innerHTML = '';
+  MEMBERS.forEach(m => {
+    const isActive = m.name === currentMember.name;
+    const btn = document.createElement('button');
+    btn.className = 'member-btn' + (isActive ? ' active' : '');
+    btn.style.setProperty('--mc-border', m.border);
+    const avatarBg    = isDark ? m.dbg    : m.bg;
+    const avatarColor = isDark ? m.dtx    : m.text;
+    btn.innerHTML = `
+      <div class="member-avatar" style="background:${avatarBg};color:${avatarColor}">
+        ${m.initial}
+        ${isActive ? '<span class="ani-badge">אני</span>' : ''}
+      </div>
+      <span class="member-name">${m.name}</span>`;
+    btn.onclick = () => selectMember(m);
+    row.appendChild(btn);
+  });
+}
+
+function selectMember(m) {
+  currentMember = m;
+  renderMembers();
+  document.getElementById('fMember').value = m.name;
+  subscribeToTasks();
+}
+
+// ── FIREBASE SUBSCRIBE ──
+let unsubscribe = null;
+function subscribeToTasks() {
+  if (unsubscribe) unsubscribe();
+  const r = ref(db, `tasks/${currentMember.name}`);
+  unsubscribe = onValue(r, snap => {
+    tasks = snap.val() || {};
+    renderList();
+  });
+}
+
+// ── CONNECTION STATUS ──
+onValue(ref(db, '.info/connected'), snap => {
+  document.getElementById('syncDot').className = 'sync-dot' + (snap.val() ? '' : ' offline');
+});
+
+// ── TABS ──
+window.setTab = function(tab) {
+  currentTab = tab;
+  ['todo','doing','done'].forEach(t => {
+    const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    btn.className = 'tab-btn' + (t === tab ? ` active-${t}` : '');
+  });
+  renderList();
+};
+
+// ── FILTER ──
+window.setFilter = function(el, f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderList();
+};
+
+// ── RENDER LIST ──
+function renderList() {
+  // update counts
+  const all = Object.values(tasks);
+  document.getElementById('cntTodo').textContent  = all.filter(t => t.status === 'todo').length  || '';
+  document.getElementById('cntDoing').textContent = all.filter(t => t.status === 'doing').length || '';
+  document.getElementById('cntDone').textContent  = all.filter(t => t.status === 'done').length  || '';
+
+  let items = all.filter(t => t.status === currentTab);
+  if (currentFilter === 'cal')   items = items.filter(t => t.calSync);
+  else if (currentFilter !== 'all') items = items.filter(t => t.priority === currentFilter);
+
+  // sort: high → med → low → none, then by dueDate
+  const priOrder = { high: 0, med: 1, low: 2, none: 3 };
+  items.sort((a, b) => {
+    const pd = (priOrder[a.priority] || 3) - (priOrder[b.priority] || 3);
+    if (pd !== 0) return pd;
+    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+
+  const el = document.getElementById('content');
+  if (items.length === 0) {
+    const msgs = { todo: 'אין משימות ממתינות 🎉', doing: 'אין משימות בתהליך', done: 'עוד לא הושלמה משימה — קדימה!' };
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${currentTab === 'done' ? '🏆' : '📋'}</div><p>${msgs[currentTab]}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = '';
+  items.forEach(task => {
+    const id = Object.keys(tasks).find(k => tasks[k] === task);
+    el.appendChild(buildTaskEl(id, task));
+  });
+}
+
+function buildTaskEl(id, task) {
+  const today = new Date().toISOString().slice(0, 10);
+  const overdue = task.dueDate && task.dueDate < today && task.status !== 'done';
+  const member = MEMBERS.find(m => m.name === task.member) || MEMBERS[0];
+  const avatarBg    = isDark ? member.dbg : member.bg;
+  const avatarColor = isDark ? member.dtx : member.text;
+
+  const div = document.createElement('div');
+  div.className = `task-item pri-${task.priority || 'none'}`;
+  div.dataset.id = id;
+
+  const nextStatus = { todo: 'doing', doing: 'done', done: 'todo' };
+  const nextLabel  = { todo: 'התחל ▶', doing: 'סיים ✓', done: '↩ פתח מחדש' };
+  const checkCls   = task.status === 'done' ? 'checked' : task.status === 'doing' ? 'doing' : '';
+
+  const priLabel = { high: '🔴 גבוהה', med: '🟠 בינונית', low: '🟢 נמוכה', none: '' };
+  const priChipCls = { high: 'chip-high', med: 'chip-med', low: 'chip-low', none: '' };
+
+  let metaHtml = '';
+  if (task.priority && task.priority !== 'none') {
+    metaHtml += `<span class="meta-chip ${priChipCls[task.priority]}">${priLabel[task.priority]}</span>`;
+  }
+  if (task.dueDate) {
+    const cls = overdue ? 'chip-overdue' : 'chip-date';
+    const label = overdue ? '⚠️ ' : '📅 ';
+    metaHtml += `<span class="meta-chip ${cls}">${label}${formatDate(task.dueDate)}</span>`;
+  }
+  if (task.calSync) {
+    metaHtml += `<span class="meta-chip chip-cal">🔔 יומן</span>`;
+  }
+
+  div.innerHTML = `
+    <div class="check-wrap">
+      <div class="check-circle ${checkCls}" onclick="cycleStatus('${id}','${task.status}')"></div>
+    </div>
+    <div class="task-body" onclick="openEdit('${id}')">
+      <div class="task-title${task.status === 'done' ? ' done-title' : ''}">${escHtml(task.title)}</div>
+      ${task.desc ? `<div class="task-desc">${escHtml(task.desc)}</div>` : ''}
+      ${metaHtml ? `<div class="task-meta">${metaHtml}</div>` : ''}
+      <div class="task-footer">
+        <div class="member-chip">
+          <div class="member-chip-dot" style="background:${avatarBg};color:${avatarColor}">${member.initial}</div>
+          ${task.member}
+        </div>
+        <button class="move-btn" onclick="event.stopPropagation();moveTask('${id}','${nextStatus[task.status]}')">${nextLabel[task.status]}</button>
+      </div>
+    </div>
+    <button class="task-delete" onclick="event.stopPropagation();deleteTask('${id}')" title="מחק">×</button>`;
+  return div;
+}
+
+// ── CYCLE STATUS (check circle) ──
+window.cycleStatus = function(id, current) {
+  const next = { todo: 'doing', doing: 'done', done: 'todo' };
+  moveTask(id, next[current]);
+};
+
+// ── MOVE TASK ──
+window.moveTask = function(id, newStatus) {
+  update(ref(db, `tasks/${currentMember.name}/${id}`), { status: newStatus });
+  const msg = { doing: 'משימה בתהליך ⚡', done: 'משימה הושלמה ✅', todo: 'משימה נפתחה מחדש 🔄' };
+  showToast(msg[newStatus]);
+};
+
+// ── DELETE ──
+window.deleteTask = function(id) {
+  const item = document.querySelector(`.task-item[data-id="${id}"]`);
+  if (item) item.classList.add('removing');
+  setTimeout(() => remove(ref(db, `tasks/${currentMember.name}/${id}`)), 280);
+  showToast('משימה נמחקה');
+};
+
+// ── MODAL OPEN/CLOSE ──
+document.getElementById('fabBtn').onclick = openNew;
+document.getElementById('modalOverlay').onclick = e => { if (e.target === document.getElementById('modalOverlay')) closeModal(); };
+
+function openNew() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'משימה חדשה';
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fDesc').value  = '';
+  document.getElementById('fDate').value  = '';
+  document.getElementById('fMember').value = currentMember.name;
+  setPri('none');
+  formCal = false;
+  document.getElementById('calToggle').className = 'toggle-switch';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('fTitle').focus(), 350);
+}
+
+window.openEdit = function(id) {
+  const task = tasks[id];
+  if (!task) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'עריכת משימה';
+  document.getElementById('fTitle').value  = task.title || '';
+  document.getElementById('fDesc').value   = task.desc  || '';
+  document.getElementById('fDate').value   = task.dueDate || '';
+  document.getElementById('fMember').value = task.member || currentMember.name;
+  setPri(task.priority || 'none');
+  formCal = !!task.calSync;
+  document.getElementById('calToggle').className = 'toggle-switch' + (formCal ? ' on' : '');
+  document.getElementById('modalOverlay').classList.add('open');
+};
+
+window.closeModal = function() {
+  document.getElementById('modalOverlay').classList.remove('open');
+};
+
+// ── PRIORITY ──
+window.setPri = function(p) {
+  formPri = p;
+  document.querySelectorAll('.pri-btn').forEach(b => {
+    b.className = 'pri-btn' + (b.dataset.p === p ? ` sel-${p}` : '');
+  });
+};
+
+// ── CALENDAR TOGGLE ──
+window.toggleCal = function() {
+  formCal = !formCal;
+  document.getElementById('calToggle').className = 'toggle-switch' + (formCal ? ' on' : '');
+};
+
+// ── SAVE ──
+window.saveTask = async function() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { showToast('חסרה כותרת למשימה'); return; }
+
+  const member = document.getElementById('fMember').value;
+  const dueDate = document.getElementById('fDate').value;
+
+  const taskData = {
+    title,
+    desc:      document.getElementById('fDesc').value.trim(),
+    priority:  formPri,
+    dueDate:   dueDate || null,
+    member,
+    calSync:   formCal,
+    status:    editingId ? tasks[editingId].status : 'todo',
+    updatedAt: Date.now(),
+  };
+  if (!editingId) taskData.createdAt = Date.now();
+
+  // Write to tasks
+  const memberKey = editingId ? currentMember.name : member;
+  if (editingId) {
+    await update(ref(db, `tasks/${memberKey}/${editingId}`), taskData);
+  } else {
+    await push(ref(db, `tasks/${memberKey}`), taskData);
+  }
+
+  // Optional calendar sync
+  if (formCal && dueDate) {
+    const event = {
+      title:       `✅ ${title}`,
+      date:        dueDate,
+      time:        null,
+      allDay:      true,
+      repeat:      'none',
+      customDays:  null,
+      endDate:     null,
+      members:     [member],
+      advanceMins: [60],
+      color:       '#6366f1',
+      note:        taskData.desc || '',
+      addedBy:     member,
+      addedAt:     Date.now(),
+    };
+    await push(ref(db, 'calendar/events'), event);
+  }
+
+  closeModal();
+  showToast(editingId ? 'משימה עודכנה ✓' : 'משימה נוספה ✅');
+};
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── HELPERS ──
+function formatDate(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}`;
+}
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──
+renderMembers();
+subscribeToTasks();
+</script>
+</body>
+</html>

@@ -2,392 +2,195 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1e293b">
 <title>משימות משפחתיות</title>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
-:root {
-  --bg: #eef2f7;
-  --surface: #ffffff;
-  --surface2: #f1f5f9;
-  --border: #e2e8f0;
-  --text: #1e293b;
-  --text2: #64748b;
-  --text3: #94a3b8;
-  --shadow: rgba(0,0,0,.06);
-  --accent: #6366f1;
-  --accent-bg: #eef2ff;
-}
-.dark {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface2: #0f172a;
-  --border: #334155;
-  --text: #e2e8f0;
-  --text2: #94a3b8;
-  --text3: #475569;
-  --shadow: rgba(0,0,0,.25);
-  --accent-bg: #1e1b4b;
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;-webkit-tap-highlight-color:transparent}
+body{font-family:'Rubik',sans-serif;background:#eef2f7;min-height:100vh;max-width:520px;margin:0 auto;-webkit-font-smoothing:antialiased;transition:background .3s}
+input:focus,textarea:focus,select:focus{outline:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-appearance:none}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Rubik', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background .25s, color .25s; }
+@keyframes slideIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(60px)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── HEADER ── */
-.header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 16px 10px;
-  position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 2px 12px var(--shadow);
-}
-.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.header-title { font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
-.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; }
-.sync-dot.offline { background: #ef4444; }
-.header-icon-btn {
-  width: 36px; height: 36px; border-radius: 50%; border: none;
-  background: var(--surface2); color: var(--text2); font-size: 16px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-}
+/* ── Loading ── */
+#loading{display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;gap:12px}
+#loading .icon{font-size:36px;animation:pulse 1.5s infinite}
+#loading .text{font-size:13px;color:#94a3b8}
 
-/* ── MEMBERS ── */
-.members-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-.members-row::-webkit-scrollbar { display: none; }
-.member-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  cursor: pointer; flex-shrink: 0; border: none; background: none; padding: 0;
-}
-.member-avatar {
-  width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center;
-  justify-content: center; font-size: 18px; font-weight: 700;
-  border: 3px solid transparent; transition: border-color .2s, transform .15s;
-  position: relative;
-}
-.member-btn.active .member-avatar { border-color: var(--mc-border); transform: scale(1.07); }
-.member-name { font-size: 11px; font-weight: 600; color: var(--text2); }
-.ani-badge {
-  position: absolute; top: -3px; left: -3px;
-  background: var(--mc-border); color: white; border-radius: 20px;
-  font-size: 9px; font-weight: 700; padding: 1px 5px;
-}
+/* ── Header ── */
+.header{background:white;padding:14px 18px 12px;position:sticky;top:0;z-index:50;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.header-title{font-size:18px;font-weight:700;color:#1e293b;text-align:center;flex:1}
+.header-icon-btn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;background:#f1f5f9;flex-shrink:0;border:none;cursor:pointer;font-family:inherit;transition:background .15s}
+.header-icon-btn:active{background:#e2e8f0}
 
-/* ── TABS ── */
-.tabs-bar {
-  display: flex; gap: 8px; padding: 12px 16px 0;
-}
-.tab-btn {
-  flex: 1; padding: 9px 6px; border-radius: 12px; border: none;
-  font-family: 'Rubik', sans-serif; font-size: 13px; font-weight: 600;
-  cursor: pointer; background: var(--surface); color: var(--text2);
-  border: 1.5px solid var(--border); transition: all .18s;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-}
-.tab-btn .tab-count {
-  font-size: 11px; font-weight: 400; opacity: .7;
-}
-.tab-btn.active-todo   { background: #1e3a8a; color: #93c5fd; border-color: #1d4ed8; }
-.tab-btn.active-doing  { background: #78350f; color: #fcd34d; border-color: #f59e0b; }
-.tab-btn.active-done   { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+/* ── Members ── */
+.members-row{display:flex;gap:16px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.members-row::-webkit-scrollbar{display:none}
+.member-avatar-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;cursor:pointer}
+.member-avatar{width:58px;height:58px;border-radius:50%;border:3px solid transparent;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;position:relative;transition:all .2s;overflow:hidden}
+.member-avatar img{width:100%;height:100%;object-fit:cover;object-position:center top;border-radius:50%}
+.member-me-badge{position:absolute;top:-2px;right:-2px;background:#2563eb;color:white;font-size:9px;font-weight:700;padding:2px 5px;border-radius:6px;line-height:1.2}
+.member-name{font-size:11px;font-weight:500;color:#64748b;text-align:center}
+.member-name.is-me{color:#2563eb;font-weight:700}
+.sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;vertical-align:middle;margin-left:5px}
+.sync-dot.on{background:#22c55e;box-shadow:0 0 6px #22c55e88}
+.sync-dot.off{background:#ef4444}
 
-/* ── FILTER BAR ── */
-.filter-bar {
-  display: flex; gap: 6px; padding: 10px 16px 0; overflow-x: auto;
-}
-.filter-bar::-webkit-scrollbar { display: none; }
-.filter-chip {
-  flex-shrink: 0; padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border);
-  background: var(--surface); color: var(--text2); font-family: 'Rubik', sans-serif;
-  font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s;
-}
-.filter-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;padding:11px 16px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{border-radius:10px;padding:8px 6px;font-size:11px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:all .2s;text-align:center;line-height:1.3;background:white;color:#64748b;flex:1;border:none;cursor:pointer;font-family:inherit}
+.tab-btn.active{color:white}
+.tab-icon{font-size:17px;margin-bottom:1px}
+.tab-count{font-size:10px;font-weight:400;opacity:.75}
 
-/* ── CONTENT ── */
-.content { padding: 12px 16px 100px; max-width: 520px; margin: 0 auto; }
+/* ── Filter chips ── */
+.filter-row{display:flex;gap:6px;padding:9px 16px 0;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.filter-chip{flex-shrink:0;padding:5px 13px;border-radius:20px;border:1.5px solid #e2e8f0;background:white;color:#64748b;font-family:'Rubik',sans-serif;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+.filter-chip.active{background:#6366f1;color:white;border-color:#6366f1}
 
-/* ── TASK ITEM ── */
-.task-item {
-  background: var(--surface); border-radius: 13px; padding: 13px 14px;
-  margin-bottom: 9px; display: flex; gap: 11px; align-items: flex-start;
-  border-right: 4px solid transparent;
-  box-shadow: 0 2px 10px var(--shadow);
-  animation: slideIn .22s ease;
-  cursor: pointer;
-  transition: transform .12s;
-}
-.task-item:active { transform: scale(.98); }
-.task-item.pri-high  { border-right-color: #ef4444; }
-.task-item.pri-med   { border-right-color: #f59e0b; }
-.task-item.pri-low   { border-right-color: #22c55e; }
-.task-item.pri-none  { border-right-color: var(--border); }
+/* ── Task list ── */
+.tasks-list{padding:8px 16px 100px}
+.empty-state{text-align:center;padding:40px 20px;color:#cbd5e1}
+.empty-icon{font-size:42px;margin-bottom:6px}
+.empty-tx{font-size:13px}
 
-.check-wrap { flex-shrink: 0; padding-top: 1px; }
-.check-circle {
-  width: 22px; height: 22px; border-radius: 50%;
-  border: 2px solid var(--border); background: var(--surface2);
-  display: flex; align-items: center; justify-content: center;
-  transition: all .15s; cursor: pointer;
-}
-.check-circle:hover { border-color: #22c55e; }
-.check-circle.checked { background: #22c55e; border-color: #22c55e; }
-.check-circle.checked::after { content: '✓'; color: white; font-size: 12px; font-weight: 700; }
-.check-circle.doing { background: #f59e0b; border-color: #f59e0b; }
-.check-circle.doing::after { content: '⚡'; font-size: 10px; }
+/* ── Task item ── */
+.task-item{display:flex;align-items:flex-start;gap:10px;background:white;border-radius:13px;padding:13px 14px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,0,0,.05);animation:slideIn .22s ease both;transition:all .2s;border-right:4px solid transparent;position:relative}
+.task-item:active{transform:scale(.98)}
+.task-item.removing{animation:slideOut .35s ease forwards}
+.task-item.pri-high{border-right-color:#ef4444}
+.task-item.pri-med{border-right-color:#f59e0b}
+.task-item.pri-low{border-right-color:#22c55e}
+.task-item.pri-none{border-right-color:#e2e8f0}
 
-.task-body { flex: 1; min-width: 0; }
-.task-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 5px; word-break: break-word; }
-.task-title.done-title { text-decoration: line-through; opacity: .45; }
-.task-desc { font-size: 12px; color: var(--text2); margin-bottom: 6px; line-height: 1.4; }
-.task-meta { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
-.meta-chip {
-  font-size: 10px; border-radius: 20px; padding: 2px 8px; font-weight: 600;
-}
-.chip-high  { background: #fee2e2; color: #dc2626; }
-.chip-med   { background: #ffedd5; color: #c2410c; }
-.chip-low   { background: #dcfce7; color: #15803d; }
-.chip-date  { background: var(--accent-bg); color: var(--accent); }
-.chip-cal   { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
-.chip-overdue { background: #fee2e2; color: #dc2626; }
+.check-wrap{flex-shrink:0;padding-top:1px}
+.check-circle{width:23px;height:23px;border-radius:50%;border:2px solid #cbd5e1;background:white;display:flex;align-items:center;justify-content:center;transition:all .2s;cursor:pointer;flex-shrink:0}
+.check-circle:hover{border-color:#22c55e}
+.check-circle.doing{background:#f59e0b;border-color:#f59e0b;color:white;font-size:11px}
+.check-circle.done{background:#22c55e;border-color:#22c55e;color:white;font-size:13px;font-weight:700}
 
-.task-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; }
-.member-chip {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; color: var(--text2);
-}
-.member-chip-dot { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; }
+.task-body{flex:1;min-width:0;cursor:pointer}
+.task-title{font-size:14px;font-weight:600;color:#1e293b;margin-bottom:4px;word-break:break-word}
+.task-title.is-done{text-decoration:line-through;opacity:.4}
+.task-desc{font-size:12px;color:#64748b;margin-bottom:5px;line-height:1.4}
+.task-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:5px}
+.meta-chip{font-size:10px;font-weight:600;border-radius:20px;padding:2px 8px}
+.chip-high{background:#fee2e2;color:#dc2626}
+.chip-med{background:#ffedd5;color:#c2410c}
+.chip-low{background:#dcfce7;color:#15803d}
+.chip-date{background:#eef2ff;color:#4f46e5}
+.chip-overdue{background:#fee2e2;color:#dc2626}
+.chip-cal{background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
 
-.move-btn {
-  font-size: 11px; padding: 4px 10px; border-radius: 8px;
-  border: 1px solid var(--border); background: var(--surface2);
-  color: var(--text2); cursor: pointer; font-family: 'Rubik', sans-serif;
-  font-weight: 600; transition: all .15s;
-}
-.move-btn:hover { border-color: var(--accent); color: var(--accent); }
+.task-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+.task-member{display:flex;align-items:center;gap:5px;font-size:11px;color:#94a3b8}
+.member-dot{width:18px;height:18px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.member-dot img{width:100%;height:100%;object-fit:cover}
+.move-btn{font-size:11px;padding:4px 10px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;cursor:pointer;font-family:'Rubik',sans-serif;font-weight:600;transition:all .15s}
+.move-btn:active{background:#e2e8f0}
 
-.task-delete {
-  width: 28px; height: 28px; border-radius: 8px; border: none;
-  background: transparent; color: var(--text3); font-size: 16px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  transition: color .15s;
-}
-.task-delete:hover { color: #ef4444; }
-
-/* ── EMPTY STATE ── */
-.empty-state {
-  text-align: center; padding: 48px 20px; color: var(--text2);
-}
-.empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; }
-.empty-state p { font-size: 14px; }
+.del-btn{opacity:.35;color:#ef4444;font-size:18px;padding:2px 4px;transition:all .15s;border-radius:6px;flex-shrink:0;font-family:inherit;border:none;background:none;cursor:pointer;line-height:1}
+.del-btn:active{opacity:1;background:#fef2f2}
 
 /* ── FAB ── */
-.fab {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
-  color: white; border: none; border-radius: 16px; padding: 14px 28px;
-  font-family: 'Rubik', sans-serif; font-size: 15px; font-weight: 700;
-  cursor: pointer; box-shadow: 0 4px 20px rgba(99,102,241,.4);
-  display: flex; align-items: center; gap: 8px;
-  transition: transform .15s, box-shadow .15s;
-  z-index: 50;
-}
-.fab:hover { transform: translateX(-50%) scale(1.03); box-shadow: 0 6px 24px rgba(99,102,241,.5); }
-.fab:active { transform: translateX(-50%) scale(.97); }
+.fab-add{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#6366f1,#818cf8);color:white;border:none;border-radius:16px;padding:14px 28px;font-family:'Rubik',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 24px #6366f166;display:flex;align-items:center;gap:8px;transition:transform .15s;z-index:100}
+.fab-add:active{transform:translateX(-50%) scale(.96)}
 
-/* ── MODAL ── */
-.modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200;
-  display: flex; align-items: flex-end; justify-content: center;
-  opacity: 0; pointer-events: none; transition: opacity .25s;
-}
-.modal-overlay.open { opacity: 1; pointer-events: all; }
-.modal {
-  background: var(--surface); border-radius: 22px 22px 0 0;
-  padding: 20px 20px 36px; width: 100%; max-width: 520px;
-  transform: translateY(100%); transition: transform .3s cubic-bezier(.32,1,.4,1);
-  max-height: 90vh; overflow-y: auto;
-}
-.modal-overlay.open .modal { transform: translateY(0); }
+/* ── Bottom sheet ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;animation:fadeIn .2s}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;background:white;border-radius:20px 20px 0 0;padding:20px 18px 36px;z-index:501;animation:slideUp .28s ease;max-height:92vh;overflow-y:auto}
+.handle{width:40px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 16px}
+.form-title{font-size:17px;font-weight:700;color:#1e293b;margin-bottom:16px}
+.fg{margin-bottom:13px}
+.flbl{font-size:12px;font-weight:600;color:#64748b;margin-bottom:5px;display:block}
+.finput{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:14px;font-family:'Rubik',sans-serif;color:#1e293b;transition:border-color .15s;background:white}
+.finput:focus{border-color:#6366f1}
+textarea.finput{resize:none;min-height:68px;line-height:1.5}
 
-.modal-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 18px; }
-.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; color: var(--text); }
+.pri-btns{display:flex;gap:6px}
+.pri-btn{flex:1;padding:8px 4px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;font-family:'Rubik',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;color:#64748b;text-align:center}
+.pri-btn.sel-high{background:#fee2e2;border-color:#ef4444;color:#dc2626}
+.pri-btn.sel-med{background:#ffedd5;border-color:#f59e0b;color:#c2410c}
+.pri-btn.sel-low{background:#dcfce7;border-color:#22c55e;color:#15803d}
+.pri-btn.sel-none{background:#f1f5f9;border-color:#6366f1;color:#4f46e5}
 
-.field-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; }
-.field-input {
-  width: 100%; padding: 10px 13px; border-radius: 10px;
-  border: 1.5px solid var(--border); background: var(--surface2);
-  font-family: 'Rubik', sans-serif; font-size: 14px; color: var(--text);
-  outline: none; transition: border-color .15s; margin-bottom: 14px;
-}
-.field-input:focus { border-color: var(--accent); }
-textarea.field-input { resize: none; min-height: 70px; line-height: 1.5; }
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;background:#f8fafc;border-radius:12px;border:1.5px solid #e2e8f0}
+.toggle-info p{font-size:13px;font-weight:600;color:#1e293b}
+.toggle-info span{font-size:11px;color:#64748b}
+.toggle{width:44px;height:24px;border-radius:12px;background:#cbd5e1;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:#6366f1}
+.toggle::after{content:'';position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:white;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.toggle.on::after{transform:translateX(-20px)}
 
-.field-row { display: flex; gap: 10px; margin-bottom: 14px; }
-.field-row > * { flex: 1; margin-bottom: 0; }
+.form-btns{display:flex;gap:8px;margin-top:18px}
+.btn-cancel{flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:500;background:#f1f5f9;color:#64748b;font-family:'Rubik',sans-serif}
+.btn-save{flex:2;padding:12px;border-radius:12px;font-size:14px;font-weight:700;color:white;background:linear-gradient(135deg,#6366f1,#818cf8);box-shadow:0 3px 10px #6366f144;font-family:'Rubik',sans-serif}
+.btn-save:active{transform:scale(.97)}
+.btn-delete{width:100%;margin-top:10px;padding:11px;border-radius:11px;font-size:13px;font-weight:500;color:#ef4444;background:#fef2f2;font-family:'Rubik',sans-serif;cursor:pointer}
 
-.priority-btns { display: flex; gap: 7px; margin-bottom: 14px; }
-.pri-btn {
-  flex: 1; padding: 8px 6px; border-radius: 10px; border: 2px solid var(--border);
-  background: var(--surface2); font-family: 'Rubik', sans-serif; font-size: 12px; font-weight: 700;
-  cursor: pointer; transition: all .15s; color: var(--text2);
-}
-.pri-btn.sel-high { background: #fee2e2; border-color: #ef4444; color: #dc2626; }
-.pri-btn.sel-med  { background: #ffedd5; border-color: #f59e0b; color: #c2410c; }
-.pri-btn.sel-low  { background: #dcfce7; border-color: #22c55e; color: #15803d; }
-.pri-btn.sel-none { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+/* ── Toast ── */
+.toast{position:fixed;top:22px;left:50%;transform:translateX(-50%);background:#1e293b;color:white;padding:9px 22px;border-radius:10px;font-size:13px;font-weight:500;z-index:2000;animation:popIn .3s ease;white-space:nowrap}
 
-.toggle-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 14px; background: var(--surface2); border-radius: 12px; margin-bottom: 14px;
-}
-.toggle-info { font-size: 13px; font-weight: 600; color: var(--text); }
-.toggle-sub  { font-size: 11px; color: var(--text2); margin-top: 2px; }
-.toggle-switch {
-  width: 44px; height: 24px; border-radius: 12px; background: var(--border);
-  position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
-}
-.toggle-switch.on { background: #6366f1; }
-.toggle-switch::after {
-  content: ''; position: absolute; top: 3px; right: 3px;
-  width: 18px; height: 18px; border-radius: 50%; background: white;
-  transition: transform .2s; box-shadow: 0 1px 4px rgba(0,0,0,.3);
-}
-.toggle-switch.on::after { transform: translateX(-20px); }
-
-.modal-btns { display: flex; gap: 10px; margin-top: 6px; }
-.btn-cancel {
-  flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid var(--border);
-  background: var(--surface2); color: var(--text2); font-family: 'Rubik', sans-serif;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-}
-.btn-save {
-  flex: 2; padding: 12px; border-radius: 12px; border: none;
-  background: linear-gradient(135deg, #6366f1, #3b82f6); color: white;
-  font-family: 'Rubik', sans-serif; font-size: 14px; font-weight: 700;
-  cursor: pointer; box-shadow: 0 3px 12px rgba(99,102,241,.35);
-}
-
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
-  background: #1e293b; color: #e2e8f0; padding: 10px 20px; border-radius: 12px;
-  font-size: 13px; font-weight: 600; z-index: 300; opacity: 0;
-  transition: all .3s; pointer-events: none; white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0,0,0,.3);
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideOut {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(8px); }
-}
-.task-item.removing { animation: slideOut .3s ease forwards; }
-
-.section-label {
-  font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: .5px;
-  text-transform: uppercase; padding: 12px 0 6px; margin-bottom: 4px;
-}
+/* ══ Dark Mode ══ */
+body.dark{background:#0f172a;color:#e2e8f0}
+.dark .header{background:#1a2236;box-shadow:0 1px 8px rgba(0,0,0,.3)}
+.dark .header-title{color:#e2e8f0}
+.dark .header-icon-btn{background:#263349;color:#94a3b8}
+.dark .header-icon-btn:active{background:#334155}
+.dark .member-name{color:#64748b}
+.dark .member-name.is-me{color:#818cf8}
+.dark .tab-btn{background:#1a2236;color:#94a3b8;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.dark .filter-chip{background:#1a2236;border-color:#334155;color:#94a3b8}
+.dark .filter-chip.active{background:#4f46e5;border-color:#4f46e5;color:white}
+.dark .task-item{background:#1a2236;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.dark .task-title{color:#e2e8f0}
+.dark .task-desc{color:#94a3b8}
+.dark .task-title.is-done{opacity:.3}
+.dark .check-circle{background:#0f172a;border-color:#334155}
+.dark .move-btn{background:#263349;border-color:#334155;color:#94a3b8}
+.dark .task-member{color:#475569}
+.dark .task-item.pri-none{border-right-color:#334155}
+.dark .empty-state{color:#475569}
+.dark .sheet{background:#1a2236}
+.dark .form-title{color:#e2e8f0}
+.dark .flbl{color:#94a3b8}
+.dark .finput{background:#0f172a;border-color:#334155;color:#e2e8f0}
+.dark .finput:focus{border-color:#6366f1}
+.dark .finput::placeholder{color:#64748b}
+.dark .pri-btn{background:#0f172a;border-color:#334155;color:#94a3b8}
+.dark .toggle-row{background:#0f172a;border-color:#334155}
+.dark .toggle-info p{color:#e2e8f0}
+.dark .toggle-info span{color:#64748b}
+.dark .toggle{background:#334155}
+.dark .btn-cancel{background:#334155;color:#94a3b8}
+.dark .btn-delete{background:#7f1d1d;color:#fca5a5}
+.dark .handle{background:#334155}
+.dark .toast{background:#334155;color:#e2e8f0}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-top">
-    <div class="header-title">
-      ✅ משימות
-      <span class="sync-dot" id="syncDot"></span>
-    </div>
-    <button class="header-icon-btn" id="darkBtn" title="מצב לילה">🌙</button>
-  </div>
-  <div class="members-row" id="membersRow"></div>
+<div id="app">
+  <div id="loading"><div class="icon">✅</div><div class="text">מתחבר...</div></div>
 </div>
 
-<div class="tabs-bar">
-  <button class="tab-btn active-todo" id="tabTodo" onclick="setTab('todo')">
-    📋 לעשות<span class="tab-count" id="cntTodo">0</span>
-  </button>
-  <button class="tab-btn" id="tabDoing" onclick="setTab('doing')">
-    ⚡ בתהליך<span class="tab-count" id="cntDoing">0</span>
-  </button>
-  <button class="tab-btn" id="tabDone" onclick="setTab('done')">
-    ✅ הושלם<span class="tab-count" id="cntDone">0</span>
-  </button>
-</div>
-
-<div class="filter-bar" id="filterBar">
-  <button class="filter-chip active" data-filter="all" onclick="setFilter(this,'all')">הכל</button>
-  <button class="filter-chip" data-filter="high" onclick="setFilter(this,'high')">🔴 גבוהה</button>
-  <button class="filter-chip" data-filter="med"  onclick="setFilter(this,'med')">🟠 בינונית</button>
-  <button class="filter-chip" data-filter="low"  onclick="setFilter(this,'low')">🟢 נמוכה</button>
-  <button class="filter-chip" data-filter="cal"  onclick="setFilter(this,'cal')">🔔 יומן</button>
-</div>
-
-<div class="content" id="content"></div>
-
-<button class="fab" id="fabBtn">＋ משימה חדשה</button>
-
-<!-- ADD/EDIT MODAL -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modalTitle">משימה חדשה</div>
-
-    <label class="field-label">כותרת *</label>
-    <input class="field-input" id="fTitle" placeholder="מה צריך לעשות?" maxlength="80">
-
-    <label class="field-label">תיאור (אופציונלי)</label>
-    <textarea class="field-input" id="fDesc" placeholder="פרטים נוספים..."></textarea>
-
-    <label class="field-label">עדיפות</label>
-    <div class="priority-btns">
-      <button class="pri-btn" data-p="high" onclick="setPri('high')">🔴 גבוהה</button>
-      <button class="pri-btn" data-p="med"  onclick="setPri('med')">🟠 בינונית</button>
-      <button class="pri-btn" data-p="low"  onclick="setPri('low')">🟢 נמוכה</button>
-      <button class="pri-btn" data-p="none" onclick="setPri('none')">⬜ ללא</button>
-    </div>
-
-    <div class="field-row">
-      <div>
-        <label class="field-label">תאריך יעד</label>
-        <input class="field-input" id="fDate" type="date">
-      </div>
-      <div>
-        <label class="field-label">בשם מי</label>
-        <select class="field-input" id="fMember">
-          <option value="אמא">אמא</option>
-          <option value="אבא">אבא</option>
-          <option value="גפן">גפן</option>
-          <option value="שקד">שקד</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="toggle-row" id="calToggleRow">
-      <div>
-        <div class="toggle-info">🗓 הוסף תזכורת ביומן</div>
-        <div class="toggle-sub">יופיע ביומן המשפחתי המשותף</div>
-      </div>
-      <div class="toggle-switch" id="calToggle" onclick="toggleCal()"></div>
-    </div>
-
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">ביטול</button>
-      <button class="btn-save" onclick="saveTask()">שמור משימה</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, set, update, remove, onValue, serverTimestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
+<script>
 const firebaseConfig = {
   apiKey: "AIzaSyDGP5nqOB39ENoeRIMpFo_B3Ya2RBE99sg",
   authDomain: "family-shopping-9f8a6.firebaseapp.com",
@@ -397,334 +200,383 @@ const firebaseConfig = {
   messagingSenderId: "7886163686",
   appId: "1:7886163686:web:544391dd14dac18b2ab527"
 };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
-
-// ── MEMBERS ──
-const MEMBERS = [
-  { name: 'אמא',  initial: 'מ', bg: '#fbcfe8', border: '#ec4899', text: '#be185d', dbg: '#831843', dtx: '#f9a8d4' },
-  { name: 'אבא',  initial: 'א', bg: '#bfdbfe', border: '#3b82f6', text: '#1d4ed8', dbg: '#1e3a8a', dtx: '#93c5fd' },
-  { name: 'גפן',  initial: 'ג', bg: '#a7f3d0', border: '#10b981', text: '#047857', dbg: '#064e3b', dtx: '#6ee7b7' },
-  { name: 'שקד',  initial: 'ש', bg: '#fde68a', border: '#f59e0b', text: '#b45309', dbg: '#78350f', dtx: '#fcd34d' },
+// ── Constants ──
+const MEMBERS = ["אמא","אבא","גפן","שקד"];
+const MEMBER_PHOTOS = {
+  "אמא": "img/mama.jpg",
+  "אבא": "img/abba.png",
+  "גפן": "img/gafen.jpg",
+  "שקד": "img/shaked.jpg",
+};
+const MC = [
+  {bg:"#fbcfe8",border:"#ec4899",text:"#be185d",darkBg:"#831843",darkText:"#f9a8d4"},
+  {bg:"#bfdbfe",border:"#3b82f6",text:"#1d4ed8",darkBg:"#1e3a8a",darkText:"#93c5fd"},
+  {bg:"#a7f3d0",border:"#10b981",text:"#047857",darkBg:"#064e3b",darkText:"#6ee7b7"},
+  {bg:"#fde68a",border:"#f59e0b",text:"#b45309",darkBg:"#78350f",darkText:"#fcd34d"},
 ];
+const mc = n => MC[MEMBERS.indexOf(n)] || MC[0];
 
-// ── STATE ──
-let currentMember = MEMBERS[0];
-let currentTab    = 'todo';
-let currentFilter = 'all';
-let tasks         = {};          // { id: taskObj }
-let editingId     = null;
-let formPri       = 'none';
-let formCal       = false;
-let isDark        = localStorage.getItem('tasks-dark') === '1';
-
-// ── DARK MODE ──
-if (isDark) document.body.classList.add('dark');
-document.getElementById('darkBtn').addEventListener('click', () => {
-  isDark = !isDark;
-  document.body.classList.toggle('dark', isDark);
-  localStorage.setItem('tasks-dark', isDark ? '1' : '0');
-  document.getElementById('darkBtn').textContent = isDark ? '☀️' : '🌙';
-});
-if (isDark) document.getElementById('darkBtn').textContent = '☀️';
-
-// ── RENDER MEMBERS ──
-function renderMembers() {
-  const row = document.getElementById('membersRow');
-  row.innerHTML = '';
-  MEMBERS.forEach(m => {
-    const isActive = m.name === currentMember.name;
-    const btn = document.createElement('button');
-    btn.className = 'member-btn' + (isActive ? ' active' : '');
-    btn.style.setProperty('--mc-border', m.border);
-    const avatarBg    = isDark ? m.dbg    : m.bg;
-    const avatarColor = isDark ? m.dtx    : m.text;
-    btn.innerHTML = `
-      <div class="member-avatar" style="background:${avatarBg};color:${avatarColor}">
-        ${m.initial}
-        ${isActive ? '<span class="ani-badge">אני</span>' : ''}
-      </div>
-      <span class="member-name">${m.name}</span>`;
-    btn.onclick = () => selectMember(m);
-    row.appendChild(btn);
-  });
-}
-
-function selectMember(m) {
-  currentMember = m;
-  renderMembers();
-  document.getElementById('fMember').value = m.name;
-  subscribeToTasks();
-}
-
-// ── FIREBASE SUBSCRIBE ──
-let unsubscribe = null;
-function subscribeToTasks() {
-  if (unsubscribe) unsubscribe();
-  const r = ref(db, `tasks/${currentMember.name}`);
-  unsubscribe = onValue(r, snap => {
-    tasks = snap.val() || {};
-    renderList();
-  });
-}
-
-// ── CONNECTION STATUS ──
-onValue(ref(db, '.info/connected'), snap => {
-  document.getElementById('syncDot').className = 'sync-dot' + (snap.val() ? '' : ' offline');
-});
-
-// ── TABS ──
-window.setTab = function(tab) {
-  currentTab = tab;
-  ['todo','doing','done'].forEach(t => {
-    const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
-    btn.className = 'tab-btn' + (t === tab ? ` active-${t}` : '');
-  });
-  renderList();
+// ── State ──
+let S = {
+  me:      localStorage.getItem("tasks-me") || "",
+  tab:     "todo",
+  filter:  "all",
+  tasks:   {},
+  connected: false,
+  loaded:  false,
+  dark:    localStorage.getItem("tasks-dark") === "1",
+  editId:  null,
+  formPri: "none",
+  formCal: false,
 };
 
-// ── FILTER ──
-window.setFilter = function(el, f) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  renderList();
-};
+if (S.dark) document.body.classList.add("dark");
 
-// ── RENDER LIST ──
-function renderList() {
-  // update counts
-  const all = Object.values(tasks);
-  document.getElementById('cntTodo').textContent  = all.filter(t => t.status === 'todo').length  || '';
-  document.getElementById('cntDoing').textContent = all.filter(t => t.status === 'doing').length || '';
-  document.getElementById('cntDone').textContent  = all.filter(t => t.status === 'done').length  || '';
+const esc = s => s ? String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;") : "";
+const todayStr = () => new Date().toISOString().slice(0,10);
+const fmtDate  = d => { if (!d) return ""; const [y,m,day]=d.split("-"); return `${day}/${m}`; };
 
-  let items = all.filter(t => t.status === currentTab);
-  if (currentFilter === 'cal')   items = items.filter(t => t.calSync);
-  else if (currentFilter !== 'all') items = items.filter(t => t.priority === currentFilter);
-
-  // sort: high → med → low → none, then by dueDate
-  const priOrder = { high: 0, med: 1, low: 2, none: 3 };
-  items.sort((a, b) => {
-    const pd = (priOrder[a.priority] || 3) - (priOrder[b.priority] || 3);
-    if (pd !== 0) return pd;
-    if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-    if (a.dueDate) return -1;
-    if (b.dueDate) return 1;
-    return (b.createdAt || 0) - (a.createdAt || 0);
+// ── Firebase ──
+function startListeners() {
+  db.ref("tasks").on("value", snap => {
+    S.tasks  = snap.val() || {};
+    S.loaded = true;
+    render();
   });
-
-  const el = document.getElementById('content');
-  if (items.length === 0) {
-    const msgs = { todo: 'אין משימות ממתינות 🎉', doing: 'אין משימות בתהליך', done: 'עוד לא הושלמה משימה — קדימה!' };
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${currentTab === 'done' ? '🏆' : '📋'}</div><p>${msgs[currentTab]}</p></div>`;
-    return;
-  }
-
-  el.innerHTML = '';
-  items.forEach(task => {
-    const id = Object.keys(tasks).find(k => tasks[k] === task);
-    el.appendChild(buildTaskEl(id, task));
+  db.ref(".info/connected").on("value", snap => {
+    S.connected = snap.val() === true;
+    render();
   });
 }
 
-function buildTaskEl(id, task) {
-  const today = new Date().toISOString().slice(0, 10);
-  const overdue = task.dueDate && task.dueDate < today && task.status !== 'done';
-  const member = MEMBERS.find(m => m.name === task.member) || MEMBERS[0];
-  const avatarBg    = isDark ? member.dbg : member.bg;
-  const avatarColor = isDark ? member.dtx : member.text;
+// ── Data helpers ──
+function getItems() {
+  if (!S.me) return [];
+  const mt = S.tasks[S.me] || {};
+  let items = Object.entries(mt).map(([id,t])=>({...t,_id:id})).filter(t=>t.status===S.tab);
+  if (S.filter==="cal")       items = items.filter(t=>t.calSync);
+  else if (S.filter!=="all")  items = items.filter(t=>t.priority===S.filter);
+  const po = {high:0,med:1,low:2,none:3};
+  items.sort((a,b)=>{
+    const pd=(po[a.priority]||3)-(po[b.priority]||3);
+    if(pd!==0) return pd;
+    if(a.dueDate&&b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if(a.dueDate) return -1;
+    if(b.dueDate) return 1;
+    return (b.createdAt||0)-(a.createdAt||0);
+  });
+  return items;
+}
 
-  const div = document.createElement('div');
-  div.className = `task-item pri-${task.priority || 'none'}`;
-  div.dataset.id = id;
+function cntTab(tab) {
+  if (!S.me) return 0;
+  return Object.values(S.tasks[S.me]||{}).filter(t=>t.status===tab).length;
+}
 
-  const nextStatus = { todo: 'doing', doing: 'done', done: 'todo' };
-  const nextLabel  = { todo: 'התחל ▶', doing: 'סיים ✓', done: '↩ פתח מחדש' };
-  const checkCls   = task.status === 'done' ? 'checked' : task.status === 'doing' ? 'doing' : '';
+// ── Render ──
+function render() {
+  if (!S.loaded) return;
+  const el = document.getElementById("app");
+  el.innerHTML = buildPage();
+}
 
-  const priLabel = { high: '🔴 גבוהה', med: '🟠 בינונית', low: '🟢 נמוכה', none: '' };
-  const priChipCls = { high: 'chip-high', med: 'chip-med', low: 'chip-low', none: '' };
+function buildPage() {
+  const items    = getItems();
+  const todoCnt  = cntTab("todo");
+  const doingCnt = cntTab("doing");
+  const doneCnt  = cntTab("done");
 
-  let metaHtml = '';
-  if (task.priority && task.priority !== 'none') {
-    metaHtml += `<span class="meta-chip ${priChipCls[task.priority]}">${priLabel[task.priority]}</span>`;
-  }
-  if (task.dueDate) {
-    const cls = overdue ? 'chip-overdue' : 'chip-date';
-    const label = overdue ? '⚠️ ' : '📅 ';
-    metaHtml += `<span class="meta-chip ${cls}">${label}${formatDate(task.dueDate)}</span>`;
-  }
-  if (task.calSync) {
-    metaHtml += `<span class="meta-chip chip-cal">🔔 יומן</span>`;
-  }
+  // Tab active colors
+  const tabActiveBg   = {todo:"#1e293b",   doing:"#b45309",  done:"#15803d"};
+  const tabActiveDark = {todo:"#1e3a8a",   doing:"#78350f",  done:"#064e3b"};
+  const tabActiveTx   = {todo:"#93c5fd",   doing:"#fcd34d",  done:"#6ee7b7"};
+  const tabStyle = tab => {
+    if (S.tab !== tab) return "";
+    if (S.dark) return `style="background:${tabActiveDark[tab]};color:${tabActiveTx[tab]}"`;
+    return `style="background:${tabActiveBg[tab]};color:white"`;
+  };
 
-  div.innerHTML = `
-    <div class="check-wrap">
-      <div class="check-circle ${checkCls}" onclick="cycleStatus('${id}','${task.status}')"></div>
-    </div>
-    <div class="task-body" onclick="openEdit('${id}')">
-      <div class="task-title${task.status === 'done' ? ' done-title' : ''}">${escHtml(task.title)}</div>
-      ${task.desc ? `<div class="task-desc">${escHtml(task.desc)}</div>` : ''}
-      ${metaHtml ? `<div class="task-meta">${metaHtml}</div>` : ''}
-      <div class="task-footer">
-        <div class="member-chip">
-          <div class="member-chip-dot" style="background:${avatarBg};color:${avatarColor}">${member.initial}</div>
-          ${task.member}
+  const membersHtml = MEMBERS.map(name => {
+    const isMe = name === S.me;
+    const c = mc(name);
+    const border = isMe ? `border-color:${c.border}` : "border-color:transparent";
+    return `
+      <div class="member-avatar-wrap" onclick="selectMe('${name}')">
+        <div class="member-avatar" style="${border}">
+          <img src="${MEMBER_PHOTOS[name]}" alt="${esc(name)}"
+               onerror="this.style.display='none';this.parentNode.insertAdjacentText('beforeend','${name[0]}')">
+          ${isMe ? `<div class="member-me-badge">אני</div>` : ""}
         </div>
-        <button class="move-btn" onclick="event.stopPropagation();moveTask('${id}','${nextStatus[task.status]}')">${nextLabel[task.status]}</button>
+        <div class="member-name${isMe?" is-me":""}">${esc(name)}</div>
+      </div>`;
+  }).join("");
+
+  const FILTERS = [
+    {id:"all", label:"הכל"},
+    {id:"high",label:"🔴 גבוהה"},
+    {id:"med", label:"🟠 בינונית"},
+    {id:"low", label:"🟢 נמוכה"},
+    {id:"cal", label:"🔔 יומן"},
+  ];
+  const filtersHtml = FILTERS.map(f=>
+    `<button class="filter-chip${S.filter===f.id?" active":""}" onclick="setFilter('${f.id}')">${f.label}</button>`
+  ).join("");
+
+  let listHtml;
+  if (!S.me) {
+    listHtml = `<div class="empty-state"><div class="empty-icon">👆</div><p class="empty-tx">בחר מי אתה כדי לראות את המשימות שלך</p></div>`;
+  } else if (!items.length) {
+    const msgs  = {todo:"אין משימות ממתינות 🎉",doing:"אין משימות בתהליך",done:"עוד לא הושלמה משימה 💪"};
+    const icons = {todo:"📋",doing:"⚡",done:"🏆"};
+    listHtml = `<div class="empty-state"><div class="empty-icon">${icons[S.tab]}</div><p class="empty-tx">${msgs[S.tab]}</p></div>`;
+  } else {
+    listHtml = items.map(buildTaskHTML).join("");
+  }
+
+  return `
+    <div class="header">
+      <div class="header-top">
+        <button class="header-icon-btn" onclick="location.href='home.html'">🏠</button>
+        <div class="header-title">✅ משימות <span class="sync-dot ${S.connected?"on":"off"}"></span></div>
+        <button class="header-icon-btn" onclick="toggleDark()">${S.dark?"☀️":"🌙"}</button>
       </div>
+      <div class="members-row">${membersHtml}</div>
     </div>
-    <button class="task-delete" onclick="event.stopPropagation();deleteTask('${id}')" title="מחק">×</button>`;
-  return div;
+    <div class="tabs">
+      <button class="tab-btn" ${tabStyle("todo")} onclick="setTab('todo')">
+        <div class="tab-icon">📋</div>לעשות
+        ${todoCnt?`<div class="tab-count">${todoCnt}</div>`:""}
+      </button>
+      <button class="tab-btn" ${tabStyle("doing")} onclick="setTab('doing')">
+        <div class="tab-icon">⚡</div>בתהליך
+        ${doingCnt?`<div class="tab-count">${doingCnt}</div>`:""}
+      </button>
+      <button class="tab-btn" ${tabStyle("done")} onclick="setTab('done')">
+        <div class="tab-icon">✅</div>הושלם
+        ${doneCnt?`<div class="tab-count">${doneCnt}</div>`:""}
+      </button>
+    </div>
+    <div class="filter-row">${filtersHtml}</div>
+    <div class="tasks-list">${listHtml}</div>
+    <button class="fab-add" onclick="openNew()">＋ משימה חדשה</button>`;
 }
 
-// ── CYCLE STATUS (check circle) ──
-window.cycleStatus = function(id, current) {
-  const next = { todo: 'doing', doing: 'done', done: 'todo' };
-  moveTask(id, next[current]);
-};
+function buildTaskHTML(task) {
+  const id     = task._id;
+  const isDone = task.status === "done";
+  const isDoing= task.status === "doing";
+  const over   = task.dueDate && task.dueDate < todayStr() && !isDone;
+  const checkCls = isDone?"done":isDoing?"doing":"";
+  const checkIc  = isDone?"✓":isDoing?"⚡":"";
 
-// ── MOVE TASK ──
-window.moveTask = function(id, newStatus) {
-  update(ref(db, `tasks/${currentMember.name}/${id}`), { status: newStatus });
-  const msg = { doing: 'משימה בתהליך ⚡', done: 'משימה הושלמה ✅', todo: 'משימה נפתחה מחדש 🔄' };
-  showToast(msg[newStatus]);
-};
+  const priLabel = {high:"🔴 גבוהה",med:"🟠 בינונית",low:"🟢 נמוכה"};
+  const priChip  = {high:"chip-high",med:"chip-med",low:"chip-low"};
+  let meta = "";
+  if (task.priority && task.priority!=="none") meta += `<span class="meta-chip ${priChip[task.priority]}">${priLabel[task.priority]}</span>`;
+  if (task.dueDate) meta += `<span class="meta-chip ${over?"chip-overdue":"chip-date"}">${over?"⚠️ ":"📅 "}${fmtDate(task.dueDate)}</span>`;
+  if (task.calSync) meta += `<span class="meta-chip chip-cal">🔔 יומן</span>`;
 
-// ── DELETE ──
-window.deleteTask = function(id) {
-  const item = document.querySelector(`.task-item[data-id="${id}"]`);
-  if (item) item.classList.add('removing');
-  setTimeout(() => remove(ref(db, `tasks/${currentMember.name}/${id}`)), 280);
-  showToast('משימה נמחקה');
-};
+  const c  = mc(S.me);
+  const bg = S.dark ? c.darkBg : c.bg;
+  const tx = S.dark ? c.darkText : c.text;
+  const nextStatus = {todo:"doing",doing:"done",done:"todo"};
+  const nextLabel  = {todo:"התחל ▶",doing:"סיים ✓",done:"↩ פתח"};
 
-// ── MODAL OPEN/CLOSE ──
-document.getElementById('fabBtn').onclick = openNew;
-document.getElementById('modalOverlay').onclick = e => { if (e.target === document.getElementById('modalOverlay')) closeModal(); };
+  return `
+    <div class="task-item pri-${task.priority||"none"}" id="ti-${id}">
+      <div class="check-wrap">
+        <div class="check-circle ${checkCls}" onclick="cycleStatus('${id}','${task.status}')">${checkIc}</div>
+      </div>
+      <div class="task-body" onclick="openEdit('${id}')">
+        <div class="task-title${isDone?" is-done":""}">${esc(task.title)}</div>
+        ${task.desc?`<div class="task-desc">${esc(task.desc)}</div>`:""}
+        ${meta?`<div class="task-meta">${meta}</div>`:""}
+        <div class="task-footer">
+          <div class="task-member">
+            <div class="member-dot" style="background:${bg};color:${tx}">
+              <img src="${MEMBER_PHOTOS[S.me]||""}" alt="" onerror="this.style.display='none'">
+            </div>
+            ${esc(S.me)}
+          </div>
+          <button class="move-btn" onclick="event.stopPropagation();moveTask('${id}','${nextStatus[task.status]}')">${nextLabel[task.status]}</button>
+        </div>
+      </div>
+      <button class="del-btn" onclick="event.stopPropagation();deleteTask('${id}')">×</button>
+    </div>`;
+}
 
+// ── Actions ──
+function selectMe(name) {
+  S.me = name;
+  localStorage.setItem("tasks-me", name);
+  render();
+}
+
+function setTab(tab) { S.tab = tab; render(); }
+function setFilter(f) { S.filter = f; render(); }
+
+function toggleDark() {
+  S.dark = !S.dark;
+  localStorage.setItem("tasks-dark", S.dark?"1":"0");
+  document.body.classList.toggle("dark", S.dark);
+  render();
+}
+
+function cycleStatus(id, current) {
+  moveTask(id, {todo:"doing",doing:"done",done:"todo"}[current]);
+}
+
+function moveTask(id, newStatus) {
+  db.ref(`tasks/${S.me}/${id}`).update({status:newStatus});
+  toast({doing:"משימה בתהליך ⚡",done:"משימה הושלמה ✅",todo:"משימה נפתחה מחדש 🔄"}[newStatus]);
+}
+
+function deleteTask(id) {
+  const el = document.getElementById("ti-"+id);
+  if (el) el.classList.add("removing");
+  setTimeout(() => db.ref(`tasks/${S.me}/${id}`).remove(), 320);
+  toast("משימה נמחקה");
+  closeSheet();
+}
+
+// ── Sheet ──
 function openNew() {
-  editingId = null;
-  document.getElementById('modalTitle').textContent = 'משימה חדשה';
-  document.getElementById('fTitle').value = '';
-  document.getElementById('fDesc').value  = '';
-  document.getElementById('fDate').value  = '';
-  document.getElementById('fMember').value = currentMember.name;
-  setPri('none');
-  formCal = false;
-  document.getElementById('calToggle').className = 'toggle-switch';
-  document.getElementById('modalOverlay').classList.add('open');
-  setTimeout(() => document.getElementById('fTitle').focus(), 350);
+  if (!S.me) { toast("בחר תחילה מי אתה"); return; }
+  S.editId  = null;
+  S.formPri = "none";
+  S.formCal = false;
+  showSheet("", "", "");
 }
 
-window.openEdit = function(id) {
-  const task = tasks[id];
+function openEdit(id) {
+  const task = (S.tasks[S.me]||{})[id];
   if (!task) return;
-  editingId = id;
-  document.getElementById('modalTitle').textContent = 'עריכת משימה';
-  document.getElementById('fTitle').value  = task.title || '';
-  document.getElementById('fDesc').value   = task.desc  || '';
-  document.getElementById('fDate').value   = task.dueDate || '';
-  document.getElementById('fMember').value = task.member || currentMember.name;
-  setPri(task.priority || 'none');
-  formCal = !!task.calSync;
-  document.getElementById('calToggle').className = 'toggle-switch' + (formCal ? ' on' : '');
-  document.getElementById('modalOverlay').classList.add('open');
-};
+  S.editId  = id;
+  S.formPri = task.priority||"none";
+  S.formCal = !!task.calSync;
+  showSheet(task.title||"", task.desc||"", task.dueDate||"");
+}
 
-window.closeModal = function() {
-  document.getElementById('modalOverlay').classList.remove('open');
-};
+function showSheet(title, desc, dueDate) {
+  const priL = {high:"🔴 גבוהה",med:"🟠 בינונית",low:"🟢 נמוכה",none:"⬜ ללא"};
+  const pSel = p => S.formPri===p ? ` sel-${p}` : "";
 
-// ── PRIORITY ──
-window.setPri = function(p) {
-  formPri = p;
-  document.querySelectorAll('.pri-btn').forEach(b => {
-    b.className = 'pri-btn' + (b.dataset.p === p ? ` sel-${p}` : '');
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.onclick = e => { if (e.target===overlay) closeSheet(); };
+  overlay.innerHTML = `
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="form-title">${S.editId?"עריכת משימה":"משימה חדשה"}</div>
+      <div class="fg">
+        <label class="flbl">כותרת *</label>
+        <input class="finput" id="fTitle" placeholder="מה צריך לעשות?" maxlength="80" value="${esc(title)}">
+      </div>
+      <div class="fg">
+        <label class="flbl">תיאור (אופציונלי)</label>
+        <textarea class="finput" id="fDesc" placeholder="פרטים נוספים...">${esc(desc)}</textarea>
+      </div>
+      <div class="fg">
+        <label class="flbl">עדיפות</label>
+        <div class="pri-btns">
+          <button class="pri-btn${pSel("high")}" id="pb-high" onclick="setPri('high')">${priL.high}</button>
+          <button class="pri-btn${pSel("med")}"  id="pb-med"  onclick="setPri('med')">${priL.med}</button>
+          <button class="pri-btn${pSel("low")}"  id="pb-low"  onclick="setPri('low')">${priL.low}</button>
+          <button class="pri-btn${pSel("none")}" id="pb-none" onclick="setPri('none')">${priL.none}</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="flbl">תאריך יעד (אופציונלי)</label>
+        <input class="finput" type="date" id="fDate" value="${dueDate}">
+      </div>
+      <div class="fg">
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <p>🗓 הוסף תזכורת ביומן</p>
+            <span>יופיע ביומן המשפחתי המשותף</span>
+          </div>
+          <div class="toggle${S.formCal?" on":""}" id="calToggle" onclick="toggleCal()"></div>
+        </div>
+      </div>
+      <div class="form-btns">
+        <button class="btn-cancel" onclick="closeSheet()">ביטול</button>
+        <button class="btn-save"   onclick="saveTask()">שמור</button>
+      </div>
+      ${S.editId?`<button class="btn-delete" onclick="deleteTask('${S.editId}')">🗑 מחק משימה</button>`:""}
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => { const f=document.getElementById("fTitle"); if(f)f.focus(); }, 350);
+}
+
+function closeSheet() {
+  const o = document.querySelector(".overlay");
+  if (o) o.remove();
+}
+
+function setPri(p) {
+  S.formPri = p;
+  ["high","med","low","none"].forEach(k => {
+    const b = document.getElementById("pb-"+k);
+    if (b) b.className = "pri-btn"+(k===p?` sel-${k}`:"");
   });
-};
+}
 
-// ── CALENDAR TOGGLE ──
-window.toggleCal = function() {
-  formCal = !formCal;
-  document.getElementById('calToggle').className = 'toggle-switch' + (formCal ? ' on' : '');
-};
+function toggleCal() {
+  S.formCal = !S.formCal;
+  const el = document.getElementById("calToggle");
+  if (el) el.className = "toggle"+(S.formCal?" on":"");
+}
 
-// ── SAVE ──
-window.saveTask = async function() {
-  const title = document.getElementById('fTitle').value.trim();
-  if (!title) { showToast('חסרה כותרת למשימה'); return; }
+function saveTask() {
+  const title   = (document.getElementById("fTitle").value||"").trim();
+  const desc    = (document.getElementById("fDesc").value||"").trim();
+  const dueDate = document.getElementById("fDate").value||null;
+  if (!title) { toast("חסרה כותרת"); return; }
 
-  const member = document.getElementById('fMember').value;
-  const dueDate = document.getElementById('fDate').value;
-
-  const taskData = {
-    title,
-    desc:      document.getElementById('fDesc').value.trim(),
-    priority:  formPri,
-    dueDate:   dueDate || null,
-    member,
-    calSync:   formCal,
-    status:    editingId ? tasks[editingId].status : 'todo',
+  const data = {
+    title, desc,
+    priority:  S.formPri,
+    dueDate:   dueDate||null,
+    calSync:   S.formCal,
+    status:    S.editId ? ((S.tasks[S.me]||{})[S.editId]||{}).status||"todo" : "todo",
     updatedAt: Date.now(),
   };
-  if (!editingId) taskData.createdAt = Date.now();
 
-  // Write to tasks
-  const memberKey = editingId ? currentMember.name : member;
-  if (editingId) {
-    await update(ref(db, `tasks/${memberKey}/${editingId}`), taskData);
+  if (S.editId) {
+    db.ref(`tasks/${S.me}/${S.editId}`).update(data);
+    toast("משימה עודכנה ✓");
   } else {
-    await push(ref(db, `tasks/${memberKey}`), taskData);
+    data.createdAt = Date.now();
+    db.ref(`tasks/${S.me}`).push(data);
+    toast("משימה נוספה ✅");
   }
 
-  // Optional calendar sync
-  if (formCal && dueDate) {
-    const event = {
-      title:       `✅ ${title}`,
-      date:        dueDate,
-      time:        null,
-      allDay:      true,
-      repeat:      'none',
-      customDays:  null,
-      endDate:     null,
-      members:     [member],
-      advanceMins: [60],
-      color:       '#6366f1',
-      note:        taskData.desc || '',
-      addedBy:     member,
-      addedAt:     Date.now(),
-    };
-    await push(ref(db, 'calendar/events'), event);
+  if (S.formCal && dueDate) {
+    db.ref("calendar/events").push({
+      title:`✅ ${title}`, date:dueDate, time:null, allDay:true,
+      repeat:"none", customDays:null, endDate:null,
+      members:[S.me], advanceMins:[60], color:"#6366f1",
+      note:desc||"", addedBy:S.me, addedAt:Date.now(),
+    });
   }
-
-  closeModal();
-  showToast(editingId ? 'משימה עודכנה ✓' : 'משימה נוספה ✅');
-};
-
-// ── TOAST ──
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
+  closeSheet();
 }
 
-// ── HELPERS ──
-function formatDate(d) {
-  if (!d) return '';
-  const [y, m, day] = d.split('-');
-  return `${day}/${m}`;
-}
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── Toast ──
+function toast(msg) {
+  document.querySelectorAll(".toast").forEach(t=>t.remove());
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 2300);
 }
 
-// ── INIT ──
-renderMembers();
-subscribeToTasks();
+// ── Init ──
+startListeners();
 </script>
 </body>
 </html>

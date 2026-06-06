@@ -103,7 +103,6 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .chip-date{background:#eef2ff;color:#4f46e5}
 .chip-overdue{background:#fee2e2;color:#dc2626}
 .chip-cal{background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
-.chip-label{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
 
 .task-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
 .task-member{display:flex;align-items:center;gap:5px;font-size:11px;color:#94a3b8}
@@ -140,13 +139,6 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .pri-btns .pri-btn.sel-med{background:#f59e0b!important;border-color:#f59e0b!important;color:white!important;box-shadow:0 3px 10px rgba(245,158,11,.4);transform:scale(1.04)}
 .pri-btns .pri-btn.sel-low{background:#22c55e!important;border-color:#22c55e!important;color:white!important;box-shadow:0 3px 10px rgba(34,197,94,.4);transform:scale(1.04)}
 .pri-btns .pri-btn.sel-none{background:#64748b!important;border-color:#64748b!important;color:white!important;box-shadow:0 3px 10px rgba(100,116,139,.3);transform:scale(1.04)}
-
-/* Labels in form */
-.label-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.label-chip-btn{padding:5px 12px;border-radius:20px;border:1.5px solid #e2e8f0;background:#f8fafc;font-family:'Rubik',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:#64748b}
-.label-chip-btn.selected{color:white;border-color:transparent}
-.label-input-row{display:flex;gap:6px}
-.label-add-btn{padding:8px 14px;border-radius:10px;background:#f1f5f9;color:#6366f1;font-family:'Rubik',sans-serif;font-size:13px;font-weight:700;border:1.5px solid #e2e8f0;cursor:pointer;white-space:nowrap}
 
 /* Notification banner */
 .notif-bar{background:#fff7ed;border:1.5px solid #fdba74;border-radius:12px;padding:10px 14px;margin:10px 16px 0;font-size:12px;color:#92400e;display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -190,7 +182,7 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .task-member{color:#475569}
 .dark .drag-handle{color:#334155}
 .dark .task-item.pri-none{border-right-color:#334155}
-.dark .chip-label{background:#263349;color:#94a3b8;border-color:#334155}
+
 .dark .empty-state{color:#475569}
 .dark .dnd-ghost{background:#1a2236}
 .dark .dnd-placeholder{background:#312e81!important;border-color:#6366f1!important}
@@ -201,8 +193,7 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .finput:focus{border-color:#6366f1}
 .dark .finput::placeholder{color:#64748b}
 .dark .pri-btn{background:#0f172a;border-color:#334155;color:#94a3b8}
-.dark .label-chip-btn{background:#0f172a;border-color:#334155;color:#94a3b8}
-.dark .label-add-btn{background:#263349;border-color:#334155;color:#818cf8}
+
 .dark .toggle-row{background:#0f172a;border-color:#334155}
 .dark .toggle-info p{color:#e2e8f0}
 .dark .toggle-info span{color:#64748b}
@@ -245,21 +236,11 @@ const MC = [
 ];
 const mc = n => MC[MEMBERS.indexOf(n)] || MC[0];
 
-const PRESET_LABELS = [
-  {label:"🏠 בית",     color:"#0ea5e9"},
-  {label:"💼 עבודה",   color:"#8b5cf6"},
-  {label:"🏥 בריאות", color:"#22c55e"},
-  {label:"💰 כסף",    color:"#f59e0b"},
-  {label:"🚗 רכב",    color:"#64748b"},
-  {label:"📚 לימודים",color:"#ec4899"},
-];
-
 // ── State ──
 let S = {
   me:         localStorage.getItem("tasks-me") || "",
   tab:        "todo",
   filter:     "all",
-  labelFilter:"",
   tasks:      {},
   connected:  false,
   loaded:     false,
@@ -267,7 +248,6 @@ let S = {
   editId:     null,
   formPri:    "none",
   formCal:    false,
-  formLabels: [],
 };
 
 if (S.dark) document.body.classList.add("dark");
@@ -298,10 +278,9 @@ function getItems() {
 
   if (S.filter === "cal")       items = items.filter(t => t.calSync);
   else if (S.filter !== "all")  items = items.filter(t => t.priority === S.filter);
-  if (S.labelFilter)            items = items.filter(t => (t.labels||[]).includes(S.labelFilter));
 
-  // if no filter active and filter=all → sort by ord (drag order), else by priority
-  if (S.filter === "all" && !S.labelFilter) {
+  // if no filter active → sort by ord (drag order), else by priority
+  if (S.filter === "all") {
     items.sort((a,b) => {
       if (a.ord != null && b.ord != null) return a.ord - b.ord;
       if (a.ord != null) return -1;
@@ -331,14 +310,6 @@ function getItems() {
 function cntTab(tab) {
   if (!S.me) return 0;
   return Object.values(S.tasks[S.me]||{}).filter(t=>t.status===tab).length;
-}
-
-// collect all unique labels used by current member
-function getMyLabels() {
-  if (!S.me) return [];
-  const set = new Set();
-  Object.values(S.tasks[S.me]||{}).forEach(t => (t.labels||[]).forEach(l => set.add(l)));
-  return [...set];
 }
 
 // ── Render ──
@@ -378,8 +349,6 @@ function buildPage() {
       </div>`;
   }).join("");
 
-  // Filter row: priority + calendar + my labels
-  const myLabels = getMyLabels();
   const filters = [
     {id:"all",  label:"הכל"},
     {id:"high", label:"🔴 גבוהה"},
@@ -388,9 +357,7 @@ function buildPage() {
     {id:"cal",  label:"🔔 יומן"},
   ];
   const filtersHtml = filters.map(f=>
-    `<button class="filter-chip${S.filter===f.id&&!S.labelFilter?" active":""}" onclick="setFilter('${f.id}')">${f.label}</button>`
-  ).join("") + myLabels.map(l =>
-    `<button class="filter-chip${S.labelFilter===l?" active":""}" onclick="setLabelFilter('${esc(l)}')">${esc(l)}</button>`
+    `<button class="filter-chip${S.filter===f.id?" active":""}" onclick="setFilter('${f.id}')">${f.label}</button>`
   ).join("");
 
   // notification permission banner
@@ -453,7 +420,6 @@ function buildTaskHTML(task) {
   if (task.priority && task.priority!=="none") meta += `<span class="meta-chip ${priChip[task.priority]}">${priLabel[task.priority]}</span>`;
   if (task.dueDate) meta += `<span class="meta-chip ${over?"chip-overdue":"chip-date"}">${over?"⚠️ ":"📅 "}${fmtDate(task.dueDate)}</span>`;
   if (task.calSync) meta += `<span class="meta-chip chip-cal">🔔 יומן</span>`;
-  (task.labels||[]).forEach(l => { meta += `<span class="meta-chip chip-label">${esc(l)}</span>`; });
 
   const c  = mc(S.me);
   const bg = S.dark ? c.darkBg : c.bg;
@@ -491,9 +457,8 @@ function selectMe(name) {
   localStorage.setItem("tasks-me", name);
   render();
 }
-function setTab(tab)         { S.tab = tab; S.labelFilter = ""; render(); }
-function setFilter(f)        { S.filter = f; S.labelFilter = ""; render(); }
-function setLabelFilter(l)   { S.labelFilter = S.labelFilter===l?"":l; render(); }
+function setTab(tab)  { S.tab = tab; render(); }
+function setFilter(f) { S.filter = f; render(); }
 
 function toggleDark() {
   S.dark = !S.dark;
@@ -552,32 +517,19 @@ function checkNotifications() {
 // ── Sheet ──
 function openNew() {
   if (!S.me) { toast("בחר תחילה מי אתה"); return; }
-  S.editId = null; S.formPri = "none"; S.formCal = false; S.formLabels = [];
+  S.editId = null; S.formPri = "none"; S.formCal = false;
   showSheet("","","");
 }
 function openEdit(id) {
   const task = (S.tasks[S.me]||{})[id];
   if (!task) return;
   S.editId = id; S.formPri = task.priority||"none";
-  S.formCal = !!task.calSync; S.formLabels = [...(task.labels||[])];
+  S.formCal = !!task.calSync;
   showSheet(task.title||"", task.desc||"", task.dueDate||"");
 }
 
 function showSheet(title, desc, dueDate) {
   const priL = {high:"🔴 גבוהה", med:"🟠 בינונית", low:"🟢 נמוכה", none:"⬜ ללא"};
-
-  // build preset label chips HTML
-  const presetLabelsHtml = PRESET_LABELS.map(pl => {
-    const sel = S.formLabels.includes(pl.label);
-    return `<button class="label-chip-btn${sel?" selected":""}" data-label="${esc(pl.label)}"
-              style="${sel?`background:${pl.color};`:""}">${esc(pl.label)}</button>`;
-  }).join("");
-
-  // build custom labels (ones not in presets)
-  const customLabels = S.formLabels.filter(l => !PRESET_LABELS.find(p=>p.label===l));
-  const customHtml = customLabels.map(l=>
-    `<button class="label-chip-btn selected" data-label="${esc(l)}" style="background:#6366f1">${esc(l)} ×</button>`
-  ).join("");
 
   const overlay = document.createElement("div");
   overlay.className = "overlay";
@@ -600,16 +552,6 @@ function showSheet(title, desc, dueDate) {
           <button class="pri-btn" data-pri="med">${priL.med}</button>
           <button class="pri-btn" data-pri="low">${priL.low}</button>
           <button class="pri-btn" data-pri="none">${priL.none}</button>
-        </div>
-      </div>
-      <div class="fg">
-        <label class="flbl">תגיות</label>
-        <div class="label-chips" id="labelChips">
-          ${presetLabelsHtml}${customHtml}
-        </div>
-        <div class="label-input-row">
-          <input class="finput" id="fLabelInput" placeholder="תגית מותאמת..." style="margin-bottom:0">
-          <button class="label-add-btn" id="fLabelAdd">+ הוסף</button>
         </div>
       </div>
       <div class="fg">
@@ -652,30 +594,6 @@ function showSheet(title, desc, dueDate) {
     overlay.querySelector("#calToggle").classList.toggle("on", S.formCal);
   });
 
-  // Label chips (preset)
-  overlay.querySelectorAll(".label-chip-btn[data-label]").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      toggleLabel(btn.dataset.label, overlay);
-    });
-  });
-
-  // Custom label add
-  overlay.querySelector("#fLabelAdd").addEventListener("click", e => {
-    e.stopPropagation();
-    const inp = overlay.querySelector("#fLabelInput");
-    const val = inp.value.trim();
-    if (!val) return;
-    if (!S.formLabels.includes(val)) {
-      S.formLabels.push(val);
-      rebuildLabelChips(overlay);
-    }
-    inp.value = "";
-  });
-  overlay.querySelector("#fLabelInput").addEventListener("keydown", e => {
-    if (e.key === "Enter") { e.preventDefault(); overlay.querySelector("#fLabelAdd").click(); }
-  });
-
   // Cancel / Save / Delete
   overlay.querySelector(".btn-cancel").addEventListener("click", closeSheet);
   overlay.querySelector(".btn-save").addEventListener("click", saveTask);
@@ -685,31 +603,6 @@ function showSheet(title, desc, dueDate) {
 
   overlay.addEventListener("click", e => { if (e.target===overlay) closeSheet(); });
   setTimeout(() => { const f=overlay.querySelector("#fTitle"); if(f) f.focus(); }, 350);
-}
-
-function toggleLabel(label, overlay) {
-  const idx = S.formLabels.indexOf(label);
-  if (idx === -1) S.formLabels.push(label);
-  else S.formLabels.splice(idx, 1);
-  rebuildLabelChips(overlay);
-}
-
-function rebuildLabelChips(overlay) {
-  const container = overlay.querySelector("#labelChips");
-  if (!container) return;
-  const presetLabelsHtml = PRESET_LABELS.map(pl => {
-    const sel = S.formLabels.includes(pl.label);
-    return `<button class="label-chip-btn${sel?" selected":""}" data-label="${esc(pl.label)}"
-              style="${sel?`background:${pl.color};`:""}">${esc(pl.label)}</button>`;
-  }).join("");
-  const customLabels = S.formLabels.filter(l => !PRESET_LABELS.find(p=>p.label===l));
-  const customHtml = customLabels.map(l=>
-    `<button class="label-chip-btn selected" data-label="${esc(l)}" style="background:#6366f1">${esc(l)} ×</button>`
-  ).join("");
-  container.innerHTML = presetLabelsHtml + customHtml;
-  container.querySelectorAll(".label-chip-btn[data-label]").forEach(btn => {
-    btn.addEventListener("click", e => { e.stopPropagation(); toggleLabel(btn.dataset.label, overlay); });
-  });
 }
 
 function refreshPriBtns(overlay) {
@@ -735,7 +628,6 @@ function saveTask() {
     priority:  S.formPri,
     dueDate:   dueDate||null,
     calSync:   S.formCal,
-    labels:    S.formLabels,
     status:    S.editId ? ((S.tasks[S.me]||{})[S.editId]||{}).status||"todo" : "todo",
     updatedAt: Date.now(),
   };

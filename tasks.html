@@ -461,16 +461,14 @@ function openEdit(id) {
 }
 
 function showSheet(title, desc, dueDate) {
-  const priL = {high:"🔴 גבוהה",med:"🟠 בינונית",low:"🟢 נמוכה",none:"⬜ ללא"};
-  const pSel = p => S.formPri===p ? ` sel-${p}` : "";
+  const priL = {high:"🔴 גבוהה", med:"🟠 בינונית", low:"🟢 נמוכה", none:"⬜ ללא"};
 
   const overlay = document.createElement("div");
   overlay.className = "overlay";
-  overlay.onclick = e => { if (e.target===overlay) closeSheet(); };
   overlay.innerHTML = `
     <div class="sheet">
       <div class="handle"></div>
-      <div class="form-title">${S.editId?"עריכת משימה":"משימה חדשה"}</div>
+      <div class="form-title">${S.editId ? "עריכת משימה" : "משימה חדשה"}</div>
       <div class="fg">
         <label class="flbl">כותרת *</label>
         <input class="finput" id="fTitle" placeholder="מה צריך לעשות?" maxlength="80" value="${esc(title)}">
@@ -482,10 +480,10 @@ function showSheet(title, desc, dueDate) {
       <div class="fg">
         <label class="flbl">עדיפות</label>
         <div class="pri-btns">
-          <button class="pri-btn${pSel("high")}" id="pb-high" onclick="setPri('high')">${priL.high}</button>
-          <button class="pri-btn${pSel("med")}"  id="pb-med"  onclick="setPri('med')">${priL.med}</button>
-          <button class="pri-btn${pSel("low")}"  id="pb-low"  onclick="setPri('low')">${priL.low}</button>
-          <button class="pri-btn${pSel("none")}" id="pb-none" onclick="setPri('none')">${priL.none}</button>
+          <button class="pri-btn" data-pri="high">${priL.high}</button>
+          <button class="pri-btn" data-pri="med">${priL.med}</button>
+          <button class="pri-btn" data-pri="low">${priL.low}</button>
+          <button class="pri-btn" data-pri="none">${priL.none}</button>
         </div>
       </div>
       <div class="fg">
@@ -498,17 +496,60 @@ function showSheet(title, desc, dueDate) {
             <p>🗓 הוסף תזכורת ביומן</p>
             <span>יופיע ביומן המשפחתי המשותף</span>
           </div>
-          <div class="toggle${S.formCal?" on":""}" id="calToggle" onclick="toggleCal()"></div>
+          <div class="toggle" id="calToggle"></div>
         </div>
       </div>
       <div class="form-btns">
-        <button class="btn-cancel" onclick="closeSheet()">ביטול</button>
-        <button class="btn-save"   onclick="saveTask()">שמור</button>
+        <button class="btn-cancel">ביטול</button>
+        <button class="btn-save">שמור</button>
       </div>
-      ${S.editId?`<button class="btn-delete" onclick="deleteTask('${S.editId}')">🗑 מחק משימה</button>`:""}
+      ${S.editId ? `<button class="btn-delete">🗑 מחק משימה</button>` : ""}
     </div>`;
+
   document.body.appendChild(overlay);
-  setTimeout(() => { const f=document.getElementById("fTitle"); if(f)f.focus(); }, 350);
+
+  // Set initial priority visual state
+  refreshPriBtns(overlay);
+
+  // Set initial calendar toggle state
+  if (S.formCal) overlay.querySelector("#calToggle").classList.add("on");
+
+  // Priority buttons
+  overlay.querySelectorAll(".pri-btn[data-pri]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      S.formPri = btn.dataset.pri;
+      refreshPriBtns(overlay);
+    });
+  });
+
+  // Calendar toggle
+  overlay.querySelector("#calToggle").addEventListener("click", e => {
+    e.stopPropagation();
+    S.formCal = !S.formCal;
+    overlay.querySelector("#calToggle").classList.toggle("on", S.formCal);
+  });
+
+  // Cancel / Save / Delete
+  overlay.querySelector(".btn-cancel").addEventListener("click", closeSheet);
+  overlay.querySelector(".btn-save").addEventListener("click", saveTask);
+  if (S.editId) {
+    overlay.querySelector(".btn-delete").addEventListener("click", () => {
+      deleteTask(S.editId);
+    });
+  }
+
+  // Close on overlay background tap
+  overlay.addEventListener("click", e => { if (e.target === overlay) closeSheet(); });
+
+  setTimeout(() => { const f = overlay.querySelector("#fTitle"); if (f) f.focus(); }, 350);
+}
+
+function refreshPriBtns(overlay) {
+  overlay.querySelectorAll(".pri-btn[data-pri]").forEach(btn => {
+    const p = btn.dataset.pri;
+    btn.className = "pri-btn" + (p === S.formPri ? ` sel-${p}` : "");
+  });
 }
 
 function closeSheet() {
@@ -518,16 +559,14 @@ function closeSheet() {
 
 function setPri(p) {
   S.formPri = p;
-  ["high","med","low","none"].forEach(k => {
-    const b = document.getElementById("pb-"+k);
-    if (b) b.className = "pri-btn"+(k===p?` sel-${k}`:"");
-  });
+  const overlay = document.querySelector(".overlay");
+  if (overlay) refreshPriBtns(overlay);
 }
 
 function toggleCal() {
   S.formCal = !S.formCal;
-  const el = document.getElementById("calToggle");
-  if (el) el.className = "toggle"+(S.formCal?" on":"");
+  const el = document.querySelector("#calToggle");
+  if (el) el.classList.toggle("on", S.formCal);
 }
 
 function saveTask() {

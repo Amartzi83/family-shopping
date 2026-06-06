@@ -54,7 +54,6 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .tabs{display:flex;gap:4px;padding:11px 16px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab-btn{border-radius:10px;padding:8px 6px;font-size:11px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:all .2s;text-align:center;line-height:1.3;background:white;color:#64748b;flex:1;border:none;cursor:pointer;font-family:inherit}
-.tab-btn.active{color:white}
 .tab-icon{font-size:17px;margin-bottom:1px}
 .tab-count{font-size:10px;font-weight:400;opacity:.75}
 
@@ -65,20 +64,27 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .filter-chip.active{background:#6366f1;color:white;border-color:#6366f1}
 
 /* ── Task list ── */
-.tasks-list{padding:8px 16px 100px}
+.tasks-list{padding:8px 16px 100px;user-select:none}
 .empty-state{text-align:center;padding:40px 20px;color:#cbd5e1}
 .empty-icon{font-size:42px;margin-bottom:6px}
 .empty-tx{font-size:13px}
 
 /* ── Task item ── */
-.task-item{display:flex;align-items:flex-start;gap:10px;background:white;border-radius:13px;padding:13px 14px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,0,0,.05);animation:slideIn .22s ease both;transition:all .2s;border-right:4px solid transparent;position:relative}
+.task-item{display:flex;align-items:flex-start;gap:8px;background:white;border-radius:13px;padding:13px 14px 13px 10px;margin-bottom:8px;box-shadow:0 2px 10px rgba(0,0,0,.05);animation:slideIn .22s ease both;transition:box-shadow .2s,opacity .2s;border-right:4px solid transparent;position:relative}
 .task-item:active{transform:scale(.98)}
 .task-item.removing{animation:slideOut .35s ease forwards}
 .task-item.pri-high{border-right-color:#ef4444}
 .task-item.pri-med{border-right-color:#f59e0b}
 .task-item.pri-low{border-right-color:#22c55e}
 .task-item.pri-none{border-right-color:#e2e8f0}
+.task-item.dnd-dragging{opacity:.4;box-shadow:none}
+.task-item.dnd-over{box-shadow:0 0 0 2px #6366f1}
 
+/* ── Drag handle ── */
+.drag-handle{width:20px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:14px;cursor:grab;padding-top:2px;touch-action:none}
+.drag-handle:active{cursor:grabbing;color:#94a3b8}
+
+/* ── Check circle ── */
 .check-wrap{flex-shrink:0;padding-top:1px}
 .check-circle{width:23px;height:23px;border-radius:50%;border:2px solid #cbd5e1;background:white;display:flex;align-items:center;justify-content:center;transition:all .2s;cursor:pointer;flex-shrink:0}
 .check-circle:hover{border-color:#22c55e}
@@ -97,6 +103,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .chip-date{background:#eef2ff;color:#4f46e5}
 .chip-overdue{background:#fee2e2;color:#dc2626}
 .chip-cal{background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
+.chip-label{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
 
 .task-footer{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
 .task-member{display:flex;align-items:center;gap:5px;font-size:11px;color:#94a3b8}
@@ -104,9 +111,12 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .member-dot img{width:100%;height:100%;object-fit:cover}
 .move-btn{font-size:11px;padding:4px 10px;border-radius:8px;border:1.5px solid #e2e8f0;background:#f8fafc;color:#64748b;cursor:pointer;font-family:'Rubik',sans-serif;font-weight:600;transition:all .15s}
 .move-btn:active{background:#e2e8f0}
-
 .del-btn{opacity:.35;color:#ef4444;font-size:18px;padding:2px 4px;transition:all .15s;border-radius:6px;flex-shrink:0;font-family:inherit;border:none;background:none;cursor:pointer;line-height:1}
 .del-btn:active{opacity:1;background:#fef2f2}
+
+/* ── DnD ghost ── */
+.dnd-ghost{position:fixed;z-index:9999;pointer-events:none;opacity:.92;box-shadow:0 12px 40px rgba(0,0,0,.2);border-radius:13px;transform:scale(1.02);background:white;padding:13px 14px;max-width:488px}
+.dnd-placeholder{background:#e0e7ff!important;border:2px dashed #818cf8!important;opacity:.5;min-height:52px;border-right:4px solid #818cf8!important}
 
 /* ── FAB ── */
 .fab-add{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#6366f1,#818cf8);color:white;border:none;border-radius:16px;padding:14px 28px;font-family:'Rubik',sans-serif;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 6px 24px #6366f166;display:flex;align-items:center;gap:8px;transition:transform .15s;z-index:100}
@@ -123,6 +133,7 @@ button{cursor:pointer;border:none;background:none;font-family:inherit;-webkit-ap
 .finput:focus{border-color:#6366f1}
 textarea.finput{resize:none;min-height:68px;line-height:1.5}
 
+/* Priority buttons */
 .pri-btns{display:flex;gap:6px}
 .pri-btn{flex:1;padding:8px 4px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;font-family:'Rubik',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;color:#64748b;text-align:center}
 .pri-btns .pri-btn.sel-high{background:#ef4444!important;border-color:#ef4444!important;color:white!important;box-shadow:0 3px 10px rgba(239,68,68,.4);transform:scale(1.04)}
@@ -130,6 +141,18 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .pri-btns .pri-btn.sel-low{background:#22c55e!important;border-color:#22c55e!important;color:white!important;box-shadow:0 3px 10px rgba(34,197,94,.4);transform:scale(1.04)}
 .pri-btns .pri-btn.sel-none{background:#64748b!important;border-color:#64748b!important;color:white!important;box-shadow:0 3px 10px rgba(100,116,139,.3);transform:scale(1.04)}
 
+/* Labels in form */
+.label-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.label-chip-btn{padding:5px 12px;border-radius:20px;border:1.5px solid #e2e8f0;background:#f8fafc;font-family:'Rubik',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:#64748b}
+.label-chip-btn.selected{color:white;border-color:transparent}
+.label-input-row{display:flex;gap:6px}
+.label-add-btn{padding:8px 14px;border-radius:10px;background:#f1f5f9;color:#6366f1;font-family:'Rubik',sans-serif;font-size:13px;font-weight:700;border:1.5px solid #e2e8f0;cursor:pointer;white-space:nowrap}
+
+/* Notification banner */
+.notif-bar{background:#fff7ed;border:1.5px solid #fdba74;border-radius:12px;padding:10px 14px;margin:10px 16px 0;font-size:12px;color:#92400e;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.notif-bar button{background:#f59e0b;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;font-family:'Rubik',sans-serif;cursor:pointer}
+
+/* Toggle */
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;background:#f8fafc;border-radius:12px;border:1.5px solid #e2e8f0}
 .toggle-info p{font-size:13px;font-weight:600;color:#1e293b}
 .toggle-info span{font-size:11px;color:#64748b}
@@ -144,7 +167,7 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .btn-save:active{transform:scale(.97)}
 .btn-delete{width:100%;margin-top:10px;padding:11px;border-radius:11px;font-size:13px;font-weight:500;color:#ef4444;background:#fef2f2;font-family:'Rubik',sans-serif;cursor:pointer}
 
-/* ── Toast ── */
+/* Toast */
 .toast{position:fixed;top:22px;left:50%;transform:translateX(-50%);background:#1e293b;color:white;padding:9px 22px;border-radius:10px;font-size:13px;font-weight:500;z-index:2000;animation:popIn .3s ease;white-space:nowrap}
 
 /* ══ Dark Mode ══ */
@@ -165,8 +188,12 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .check-circle{background:#0f172a;border-color:#334155}
 .dark .move-btn{background:#263349;border-color:#334155;color:#94a3b8}
 .dark .task-member{color:#475569}
+.dark .drag-handle{color:#334155}
 .dark .task-item.pri-none{border-right-color:#334155}
+.dark .chip-label{background:#263349;color:#94a3b8;border-color:#334155}
 .dark .empty-state{color:#475569}
+.dark .dnd-ghost{background:#1a2236}
+.dark .dnd-placeholder{background:#312e81!important;border-color:#6366f1!important}
 .dark .sheet{background:#1a2236}
 .dark .form-title{color:#e2e8f0}
 .dark .flbl{color:#94a3b8}
@@ -174,6 +201,8 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .finput:focus{border-color:#6366f1}
 .dark .finput::placeholder{color:#64748b}
 .dark .pri-btn{background:#0f172a;border-color:#334155;color:#94a3b8}
+.dark .label-chip-btn{background:#0f172a;border-color:#334155;color:#94a3b8}
+.dark .label-add-btn{background:#263349;border-color:#334155;color:#818cf8}
 .dark .toggle-row{background:#0f172a;border-color:#334155}
 .dark .toggle-info p{color:#e2e8f0}
 .dark .toggle-info span{color:#64748b}
@@ -182,10 +211,10 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .btn-delete{background:#7f1d1d;color:#fca5a5}
 .dark .handle{background:#334155}
 .dark .toast{background:#334155;color:#e2e8f0}
+.dark .notif-bar{background:#1c1409;border-color:#92400e;color:#fcd34d}
 </style>
 </head>
 <body>
-
 <div id="app">
   <div id="loading"><div class="icon">✅</div><div class="text">מתחבר...</div></div>
 </div>
@@ -206,10 +235,7 @@ const db = firebase.database();
 // ── Constants ──
 const MEMBERS = ["אמא","אבא","גפן","שקד"];
 const MEMBER_PHOTOS = {
-  "אמא": "img/mama.jpg",
-  "אבא": "img/abba.png",
-  "גפן": "img/gafen.jpg",
-  "שקד": "img/shaked.jpg",
+  "אמא":"img/mama.jpg","אבא":"img/abba.png","גפן":"img/gafen.jpg","שקד":"img/shaked.jpg"
 };
 const MC = [
   {bg:"#fbcfe8",border:"#ec4899",text:"#be185d",darkBg:"#831843",darkText:"#f9a8d4"},
@@ -219,25 +245,36 @@ const MC = [
 ];
 const mc = n => MC[MEMBERS.indexOf(n)] || MC[0];
 
+const PRESET_LABELS = [
+  {label:"🏠 בית",     color:"#0ea5e9"},
+  {label:"💼 עבודה",   color:"#8b5cf6"},
+  {label:"🏥 בריאות", color:"#22c55e"},
+  {label:"💰 כסף",    color:"#f59e0b"},
+  {label:"🚗 רכב",    color:"#64748b"},
+  {label:"📚 לימודים",color:"#ec4899"},
+];
+
 // ── State ──
 let S = {
-  me:      localStorage.getItem("tasks-me") || "",
-  tab:     "todo",
-  filter:  "all",
-  tasks:   {},
-  connected: false,
-  loaded:  false,
-  dark:    localStorage.getItem("tasks-dark") === "1",
-  editId:  null,
-  formPri: "none",
-  formCal: false,
+  me:         localStorage.getItem("tasks-me") || "",
+  tab:        "todo",
+  filter:     "all",
+  labelFilter:"",
+  tasks:      {},
+  connected:  false,
+  loaded:     false,
+  dark:       localStorage.getItem("tasks-dark") === "1",
+  editId:     null,
+  formPri:    "none",
+  formCal:    false,
+  formLabels: [],
 };
 
 if (S.dark) document.body.classList.add("dark");
 
-const esc = s => s ? String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;") : "";
+const esc      = s => s ? String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;") : "";
 const todayStr = () => new Date().toISOString().slice(0,10);
-const fmtDate  = d => { if (!d) return ""; const [y,m,day]=d.split("-"); return `${day}/${m}`; };
+const fmtDate  = d => { if (!d) return ""; const [,m,day]=d.split("-"); return `${day}/${m}`; };
 
 // ── Firebase ──
 function startListeners() {
@@ -245,6 +282,7 @@ function startListeners() {
     S.tasks  = snap.val() || {};
     S.loaded = true;
     render();
+    checkNotifications();
   });
   db.ref(".info/connected").on("value", snap => {
     S.connected = snap.val() === true;
@@ -257,17 +295,36 @@ function getItems() {
   if (!S.me) return [];
   const mt = S.tasks[S.me] || {};
   let items = Object.entries(mt).map(([id,t])=>({...t,_id:id})).filter(t=>t.status===S.tab);
-  if (S.filter==="cal")       items = items.filter(t=>t.calSync);
-  else if (S.filter!=="all")  items = items.filter(t=>t.priority===S.filter);
-  const po = {high:0,med:1,low:2,none:3};
-  items.sort((a,b)=>{
-    const pd=(po[a.priority]||3)-(po[b.priority]||3);
-    if(pd!==0) return pd;
-    if(a.dueDate&&b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-    if(a.dueDate) return -1;
-    if(b.dueDate) return 1;
-    return (b.createdAt||0)-(a.createdAt||0);
-  });
+
+  if (S.filter === "cal")       items = items.filter(t => t.calSync);
+  else if (S.filter !== "all")  items = items.filter(t => t.priority === S.filter);
+  if (S.labelFilter)            items = items.filter(t => (t.labels||[]).includes(S.labelFilter));
+
+  // if no filter active and filter=all → sort by ord (drag order), else by priority
+  if (S.filter === "all" && !S.labelFilter) {
+    items.sort((a,b) => {
+      if (a.ord != null && b.ord != null) return a.ord - b.ord;
+      if (a.ord != null) return -1;
+      if (b.ord != null) return 1;
+      const po = {high:0,med:1,low:2,none:3};
+      const pd = (po[a.priority]||3)-(po[b.priority]||3);
+      if (pd !== 0) return pd;
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return (b.createdAt||0)-(a.createdAt||0);
+    });
+  } else {
+    const po = {high:0,med:1,low:2,none:3};
+    items.sort((a,b) => {
+      const pd=(po[a.priority]||3)-(po[b.priority]||3);
+      if(pd!==0) return pd;
+      if(a.dueDate&&b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      if(a.dueDate) return -1;
+      if(b.dueDate) return 1;
+      return (b.createdAt||0)-(a.createdAt||0);
+    });
+  }
   return items;
 }
 
@@ -276,11 +333,19 @@ function cntTab(tab) {
   return Object.values(S.tasks[S.me]||{}).filter(t=>t.status===tab).length;
 }
 
+// collect all unique labels used by current member
+function getMyLabels() {
+  if (!S.me) return [];
+  const set = new Set();
+  Object.values(S.tasks[S.me]||{}).forEach(t => (t.labels||[]).forEach(l => set.add(l)));
+  return [...set];
+}
+
 // ── Render ──
 function render() {
   if (!S.loaded) return;
-  const el = document.getElementById("app");
-  el.innerHTML = buildPage();
+  document.getElementById("app").innerHTML = buildPage();
+  initDragDrop();
 }
 
 function buildPage() {
@@ -289,7 +354,6 @@ function buildPage() {
   const doingCnt = cntTab("doing");
   const doneCnt  = cntTab("done");
 
-  // Tab active colors
   const tabActiveBg   = {todo:"#1e293b",   doing:"#b45309",  done:"#15803d"};
   const tabActiveDark = {todo:"#1e3a8a",   doing:"#78350f",  done:"#064e3b"};
   const tabActiveTx   = {todo:"#93c5fd",   doing:"#fcd34d",  done:"#6ee7b7"};
@@ -308,22 +372,32 @@ function buildPage() {
         <div class="member-avatar" style="${border}">
           <img src="${MEMBER_PHOTOS[name]}" alt="${esc(name)}"
                onerror="this.style.display='none';this.parentNode.insertAdjacentText('beforeend','${name[0]}')">
-          ${isMe ? `<div class="member-me-badge">אני</div>` : ""}
+          ${isMe?`<div class="member-me-badge">אני</div>`:""}
         </div>
         <div class="member-name${isMe?" is-me":""}">${esc(name)}</div>
       </div>`;
   }).join("");
 
-  const FILTERS = [
-    {id:"all", label:"הכל"},
-    {id:"high",label:"🔴 גבוהה"},
-    {id:"med", label:"🟠 בינונית"},
-    {id:"low", label:"🟢 נמוכה"},
-    {id:"cal", label:"🔔 יומן"},
+  // Filter row: priority + calendar + my labels
+  const myLabels = getMyLabels();
+  const filters = [
+    {id:"all",  label:"הכל"},
+    {id:"high", label:"🔴 גבוהה"},
+    {id:"med",  label:"🟠 בינונית"},
+    {id:"low",  label:"🟢 נמוכה"},
+    {id:"cal",  label:"🔔 יומן"},
   ];
-  const filtersHtml = FILTERS.map(f=>
-    `<button class="filter-chip${S.filter===f.id?" active":""}" onclick="setFilter('${f.id}')">${f.label}</button>`
+  const filtersHtml = filters.map(f=>
+    `<button class="filter-chip${S.filter===f.id&&!S.labelFilter?" active":""}" onclick="setFilter('${f.id}')">${f.label}</button>`
+  ).join("") + myLabels.map(l =>
+    `<button class="filter-chip${S.labelFilter===l?" active":""}" onclick="setLabelFilter('${esc(l)}')">${esc(l)}</button>`
   ).join("");
+
+  // notification permission banner
+  let notifBanner = "";
+  if ('Notification' in window && Notification.permission === 'default' && S.me) {
+    notifBanner = `<div class="notif-bar">🔔 רוצה לקבל תזכורות למשימות?<button onclick="askNotif()">אפשר</button></div>`;
+  }
 
   let listHtml;
   if (!S.me) {
@@ -360,7 +434,8 @@ function buildPage() {
       </button>
     </div>
     <div class="filter-row">${filtersHtml}</div>
-    <div class="tasks-list">${listHtml}</div>
+    ${notifBanner}
+    <div class="tasks-list" id="tasksList">${listHtml}</div>
     <button class="fab-add" onclick="openNew()">＋ משימה חדשה</button>`;
 }
 
@@ -378,6 +453,7 @@ function buildTaskHTML(task) {
   if (task.priority && task.priority!=="none") meta += `<span class="meta-chip ${priChip[task.priority]}">${priLabel[task.priority]}</span>`;
   if (task.dueDate) meta += `<span class="meta-chip ${over?"chip-overdue":"chip-date"}">${over?"⚠️ ":"📅 "}${fmtDate(task.dueDate)}</span>`;
   if (task.calSync) meta += `<span class="meta-chip chip-cal">🔔 יומן</span>`;
+  (task.labels||[]).forEach(l => { meta += `<span class="meta-chip chip-label">${esc(l)}</span>`; });
 
   const c  = mc(S.me);
   const bg = S.dark ? c.darkBg : c.bg;
@@ -386,7 +462,8 @@ function buildTaskHTML(task) {
   const nextLabel  = {todo:"התחל ▶",doing:"סיים ✓",done:"↩ פתח"};
 
   return `
-    <div class="task-item pri-${task.priority||"none"}" id="ti-${id}">
+    <div class="task-item pri-${task.priority||"none"}" id="ti-${id}" data-id="${id}">
+      <div class="drag-handle" data-drag="true">⠿</div>
       <div class="check-wrap">
         <div class="check-circle ${checkCls}" onclick="cycleStatus('${id}','${task.status}')">${checkIc}</div>
       </div>
@@ -414,9 +491,9 @@ function selectMe(name) {
   localStorage.setItem("tasks-me", name);
   render();
 }
-
-function setTab(tab) { S.tab = tab; render(); }
-function setFilter(f) { S.filter = f; render(); }
+function setTab(tab)         { S.tab = tab; S.labelFilter = ""; render(); }
+function setFilter(f)        { S.filter = f; S.labelFilter = ""; render(); }
+function setLabelFilter(l)   { S.labelFilter = S.labelFilter===l?"":l; render(); }
 
 function toggleDark() {
   S.dark = !S.dark;
@@ -428,12 +505,10 @@ function toggleDark() {
 function cycleStatus(id, current) {
   moveTask(id, {todo:"doing",doing:"done",done:"todo"}[current]);
 }
-
 function moveTask(id, newStatus) {
   db.ref(`tasks/${S.me}/${id}`).update({status:newStatus});
   toast({doing:"משימה בתהליך ⚡",done:"משימה הושלמה ✅",todo:"משימה נפתחה מחדש 🔄"}[newStatus]);
 }
-
 function deleteTask(id) {
   const el = document.getElementById("ti-"+id);
   if (el) el.classList.add("removing");
@@ -442,33 +517,74 @@ function deleteTask(id) {
   closeSheet();
 }
 
+// ── Notifications ──
+function askNotif() {
+  Notification.requestPermission().then(p => {
+    if (p === "granted") { render(); checkNotifications(); }
+  });
+}
+
+function checkNotifications() {
+  if (!S.me || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const today = todayStr();
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = tomorrow.toISOString().slice(0,10);
+  const shown = JSON.parse(localStorage.getItem("tasks-notified")||"{}");
+
+  Object.entries(S.tasks[S.me]||{}).forEach(([id,task]) => {
+    if (task.status === "done" || !task.dueDate) return;
+    const key = `${id}-${today}`;
+    if (shown[key]) return;
+    if (task.dueDate === today) {
+      new Notification("✅ משימה להיום", {body: task.title, icon:"img/family.jpg"});
+      shown[key] = true;
+    } else if (task.dueDate === tomorrowStr) {
+      new Notification("⏰ משימה מחר", {body: task.title, icon:"img/family.jpg"});
+      shown[key] = true;
+    }
+  });
+
+  // keep only today's entries
+  Object.keys(shown).forEach(k => { if (!k.endsWith(today)) delete shown[k]; });
+  localStorage.setItem("tasks-notified", JSON.stringify(shown));
+}
+
 // ── Sheet ──
 function openNew() {
   if (!S.me) { toast("בחר תחילה מי אתה"); return; }
-  S.editId  = null;
-  S.formPri = "none";
-  S.formCal = false;
-  showSheet("", "", "");
+  S.editId = null; S.formPri = "none"; S.formCal = false; S.formLabels = [];
+  showSheet("","","");
 }
-
 function openEdit(id) {
   const task = (S.tasks[S.me]||{})[id];
   if (!task) return;
-  S.editId  = id;
-  S.formPri = task.priority||"none";
-  S.formCal = !!task.calSync;
+  S.editId = id; S.formPri = task.priority||"none";
+  S.formCal = !!task.calSync; S.formLabels = [...(task.labels||[])];
   showSheet(task.title||"", task.desc||"", task.dueDate||"");
 }
 
 function showSheet(title, desc, dueDate) {
   const priL = {high:"🔴 גבוהה", med:"🟠 בינונית", low:"🟢 נמוכה", none:"⬜ ללא"};
 
+  // build preset label chips HTML
+  const presetLabelsHtml = PRESET_LABELS.map(pl => {
+    const sel = S.formLabels.includes(pl.label);
+    return `<button class="label-chip-btn${sel?" selected":""}" data-label="${esc(pl.label)}"
+              style="${sel?`background:${pl.color};`:""}">${esc(pl.label)}</button>`;
+  }).join("");
+
+  // build custom labels (ones not in presets)
+  const customLabels = S.formLabels.filter(l => !PRESET_LABELS.find(p=>p.label===l));
+  const customHtml = customLabels.map(l=>
+    `<button class="label-chip-btn selected" data-label="${esc(l)}" style="background:#6366f1">${esc(l)} ×</button>`
+  ).join("");
+
   const overlay = document.createElement("div");
   overlay.className = "overlay";
   overlay.innerHTML = `
     <div class="sheet">
       <div class="handle"></div>
-      <div class="form-title">${S.editId ? "עריכת משימה" : "משימה חדשה"}</div>
+      <div class="form-title">${S.editId?"עריכת משימה":"משימה חדשה"}</div>
       <div class="fg">
         <label class="flbl">כותרת *</label>
         <input class="finput" id="fTitle" placeholder="מה צריך לעשות?" maxlength="80" value="${esc(title)}">
@@ -484,6 +600,16 @@ function showSheet(title, desc, dueDate) {
           <button class="pri-btn" data-pri="med">${priL.med}</button>
           <button class="pri-btn" data-pri="low">${priL.low}</button>
           <button class="pri-btn" data-pri="none">${priL.none}</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="flbl">תגיות</label>
+        <div class="label-chips" id="labelChips">
+          ${presetLabelsHtml}${customHtml}
+        </div>
+        <div class="label-input-row">
+          <input class="finput" id="fLabelInput" placeholder="תגית מותאמת..." style="margin-bottom:0">
+          <button class="label-add-btn" id="fLabelAdd">+ הוסף</button>
         </div>
       </div>
       <div class="fg">
@@ -503,18 +629,13 @@ function showSheet(title, desc, dueDate) {
         <button class="btn-cancel">ביטול</button>
         <button class="btn-save">שמור</button>
       </div>
-      ${S.editId ? `<button class="btn-delete">🗑 מחק משימה</button>` : ""}
+      ${S.editId?`<button class="btn-delete">🗑 מחק משימה</button>`:""}
     </div>`;
 
   document.body.appendChild(overlay);
 
-  // Set initial priority visual state
+  // Priority
   refreshPriBtns(overlay);
-
-  // Set initial calendar toggle state
-  if (S.formCal) overlay.querySelector("#calToggle").classList.add("on");
-
-  // Priority buttons
   overlay.querySelectorAll(".pri-btn[data-pri]").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
@@ -524,49 +645,83 @@ function showSheet(title, desc, dueDate) {
   });
 
   // Calendar toggle
+  if (S.formCal) overlay.querySelector("#calToggle").classList.add("on");
   overlay.querySelector("#calToggle").addEventListener("click", e => {
     e.stopPropagation();
     S.formCal = !S.formCal;
     overlay.querySelector("#calToggle").classList.toggle("on", S.formCal);
   });
 
+  // Label chips (preset)
+  overlay.querySelectorAll(".label-chip-btn[data-label]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      toggleLabel(btn.dataset.label, overlay);
+    });
+  });
+
+  // Custom label add
+  overlay.querySelector("#fLabelAdd").addEventListener("click", e => {
+    e.stopPropagation();
+    const inp = overlay.querySelector("#fLabelInput");
+    const val = inp.value.trim();
+    if (!val) return;
+    if (!S.formLabels.includes(val)) {
+      S.formLabels.push(val);
+      rebuildLabelChips(overlay);
+    }
+    inp.value = "";
+  });
+  overlay.querySelector("#fLabelInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); overlay.querySelector("#fLabelAdd").click(); }
+  });
+
   // Cancel / Save / Delete
   overlay.querySelector(".btn-cancel").addEventListener("click", closeSheet);
   overlay.querySelector(".btn-save").addEventListener("click", saveTask);
   if (S.editId) {
-    overlay.querySelector(".btn-delete").addEventListener("click", () => {
-      deleteTask(S.editId);
-    });
+    overlay.querySelector(".btn-delete").addEventListener("click", () => deleteTask(S.editId));
   }
 
-  // Close on overlay background tap
-  overlay.addEventListener("click", e => { if (e.target === overlay) closeSheet(); });
+  overlay.addEventListener("click", e => { if (e.target===overlay) closeSheet(); });
+  setTimeout(() => { const f=overlay.querySelector("#fTitle"); if(f) f.focus(); }, 350);
+}
 
-  setTimeout(() => { const f = overlay.querySelector("#fTitle"); if (f) f.focus(); }, 350);
+function toggleLabel(label, overlay) {
+  const idx = S.formLabels.indexOf(label);
+  if (idx === -1) S.formLabels.push(label);
+  else S.formLabels.splice(idx, 1);
+  rebuildLabelChips(overlay);
+}
+
+function rebuildLabelChips(overlay) {
+  const container = overlay.querySelector("#labelChips");
+  if (!container) return;
+  const presetLabelsHtml = PRESET_LABELS.map(pl => {
+    const sel = S.formLabels.includes(pl.label);
+    return `<button class="label-chip-btn${sel?" selected":""}" data-label="${esc(pl.label)}"
+              style="${sel?`background:${pl.color};`:""}">${esc(pl.label)}</button>`;
+  }).join("");
+  const customLabels = S.formLabels.filter(l => !PRESET_LABELS.find(p=>p.label===l));
+  const customHtml = customLabels.map(l=>
+    `<button class="label-chip-btn selected" data-label="${esc(l)}" style="background:#6366f1">${esc(l)} ×</button>`
+  ).join("");
+  container.innerHTML = presetLabelsHtml + customHtml;
+  container.querySelectorAll(".label-chip-btn[data-label]").forEach(btn => {
+    btn.addEventListener("click", e => { e.stopPropagation(); toggleLabel(btn.dataset.label, overlay); });
+  });
 }
 
 function refreshPriBtns(overlay) {
   overlay.querySelectorAll(".pri-btn[data-pri]").forEach(btn => {
     const p = btn.dataset.pri;
-    btn.className = "pri-btn" + (p === S.formPri ? ` sel-${p}` : "");
+    btn.className = "pri-btn" + (p===S.formPri ? ` sel-${p}` : "");
   });
 }
 
 function closeSheet() {
   const o = document.querySelector(".overlay");
   if (o) o.remove();
-}
-
-function setPri(p) {
-  S.formPri = p;
-  const overlay = document.querySelector(".overlay");
-  if (overlay) refreshPriBtns(overlay);
-}
-
-function toggleCal() {
-  S.formCal = !S.formCal;
-  const el = document.querySelector("#calToggle");
-  if (el) el.classList.toggle("on", S.formCal);
 }
 
 function saveTask() {
@@ -580,6 +735,7 @@ function saveTask() {
     priority:  S.formPri,
     dueDate:   dueDate||null,
     calSync:   S.formCal,
+    labels:    S.formLabels,
     status:    S.editId ? ((S.tasks[S.me]||{})[S.editId]||{}).status||"todo" : "todo",
     updatedAt: Date.now(),
   };
@@ -589,6 +745,9 @@ function saveTask() {
     toast("משימה עודכנה ✓");
   } else {
     data.createdAt = Date.now();
+    // assign ord = max existing + 1
+    const existing = Object.values(S.tasks[S.me]||{}).filter(t=>t.status==="todo");
+    data.ord = existing.length ? Math.max(...existing.map(t=>t.ord||0))+1 : 0;
     db.ref(`tasks/${S.me}`).push(data);
     toast("משימה נוספה ✅");
   }
@@ -608,10 +767,120 @@ function saveTask() {
 function toast(msg) {
   document.querySelectorAll(".toast").forEach(t=>t.remove());
   const el = document.createElement("div");
-  el.className = "toast";
-  el.textContent = msg;
+  el.className = "toast"; el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(()=>el.remove(), 2300);
+}
+
+// ══════════════════════════════════
+// ── Drag & Drop ──
+// ══════════════════════════════════
+let dnd = { active:false, el:null, ghost:null, placeholder:null, startY:0, holdTimer:null, items:[] };
+
+function initDragDrop() {
+  const list = document.getElementById("tasksList");
+  if (!list) return;
+
+  list.querySelectorAll(".drag-handle").forEach(handle => {
+    handle.addEventListener("touchstart", onDragStart, {passive:false});
+    handle.addEventListener("mousedown",  onDragStart);
+  });
+}
+
+function onDragStart(e) {
+  if (e.type === "touchstart") e.preventDefault();
+  const item = e.currentTarget.closest(".task-item");
+  if (!item) return;
+
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  // short hold before activating drag
+  dnd.holdTimer = setTimeout(() => startDrag(item, clientY), 300);
+
+  const cancel = () => { clearTimeout(dnd.holdTimer); document.removeEventListener("touchend", cancel); document.removeEventListener("mouseup", cancel); };
+  document.addEventListener("touchend", cancel, {once:true});
+  document.addEventListener("mouseup",  cancel, {once:true});
+}
+
+function startDrag(item, startY) {
+  const list   = document.getElementById("tasksList");
+  const rect   = item.getBoundingClientRect();
+
+  dnd.active   = true;
+  dnd.el       = item;
+  dnd.startY   = startY;
+  dnd.items    = [...list.querySelectorAll(".task-item:not(.dnd-placeholder)")];
+
+  // ghost
+  const ghost = document.createElement("div");
+  ghost.className = "dnd-ghost";
+  ghost.style.cssText = `width:${rect.width}px;top:${rect.top}px;right:${document.body.getBoundingClientRect().right - rect.right}px`;
+  ghost.innerHTML = item.innerHTML;
+  document.body.appendChild(ghost);
+  dnd.ghost = ghost;
+
+  // placeholder
+  const ph = document.createElement("div");
+  ph.className = "task-item dnd-placeholder";
+  ph.style.height = rect.height + "px";
+  item.parentNode.insertBefore(ph, item.nextSibling);
+  dnd.placeholder = ph;
+
+  item.classList.add("dnd-dragging");
+
+  document.addEventListener("touchmove", onDragMove, {passive:false});
+  document.addEventListener("mousemove", onDragMove);
+  document.addEventListener("touchend",  onDragEnd,  {once:true});
+  document.addEventListener("mouseup",   onDragEnd,  {once:true});
+}
+
+function onDragMove(e) {
+  if (!dnd.active) return;
+  if (e.cancelable) e.preventDefault();
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const dy = clientY - dnd.startY;
+
+  // move ghost
+  const rect = dnd.el.getBoundingClientRect();
+  dnd.ghost.style.top = (rect.top + dy) + "px";
+
+  // find closest item to insert placeholder before
+  const list = document.getElementById("tasksList");
+  if (!list) return;
+  const realItems = [...list.querySelectorAll(".task-item:not(.dnd-placeholder):not(.dnd-dragging)")];
+  let insertBefore = null;
+  for (const it of realItems) {
+    const r = it.getBoundingClientRect();
+    if (clientY < r.top + r.height / 2) { insertBefore = it; break; }
+  }
+  if (insertBefore) list.insertBefore(dnd.placeholder, insertBefore);
+  else list.appendChild(dnd.placeholder);
+}
+
+function onDragEnd() {
+  if (!dnd.active) return;
+  document.removeEventListener("touchmove", onDragMove);
+  document.removeEventListener("mousemove", onDragMove);
+
+  // insert dragged item where placeholder is
+  const list = document.getElementById("tasksList");
+  if (list && dnd.placeholder) {
+    list.insertBefore(dnd.el, dnd.placeholder);
+    dnd.placeholder.remove();
+  }
+  if (dnd.ghost) dnd.ghost.remove();
+  dnd.el.classList.remove("dnd-dragging");
+
+  // save new order to Firebase
+  const newOrder = [...list.querySelectorAll(".task-item:not(.dnd-placeholder)")];
+  const updates = {};
+  newOrder.forEach((el, idx) => {
+    const id = el.dataset.id;
+    if (id) updates[`tasks/${S.me}/${id}/ord`] = idx;
+  });
+  db.ref().update(updates);
+
+  dnd.active = false; dnd.el = null; dnd.ghost = null; dnd.placeholder = null;
 }
 
 // ── Init ──

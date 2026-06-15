@@ -625,7 +625,16 @@ function toggleMem(name) {
   } else {
     F.members = [...F.members, name];
   }
-  render();
+  const isDk = S.dark;
+  const iBd  = isDk ? '#334155' : '#e2e8f0';
+  document.querySelectorAll('.mems-grid .mem-check').forEach((btn, i) => {
+    const m  = MEMBERS[i];
+    const cl = MC[i];
+    const sel = F.members.includes(m);
+    btn.style.cssText = sel
+      ? `background:${isDk ? cl.darkBg : cl.border};color:white;border:none;`
+      : `background:${isDk ? '#0f172a' : 'white'};color:${isDk ? '#94a3b8' : '#64748b'};border-color:${iBd};`;
+  });
 }
 function setColor(c) { F.color = c; render(); }
 function setRepeat(v) { F.repeat = v; render(); }

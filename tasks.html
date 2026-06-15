@@ -536,7 +536,28 @@ function checkNotifications() {
 }
 
 // ── Sheet ──
+function pickIdentity(then) {
+  const o = document.createElement("div");
+  o.className = "overlay";
+  o.innerHTML = `<div class="sheet" style="text-align:center">
+    <div class="handle"></div>
+    <div class="form-title">מי אתה?</div>
+    <div class="share-members" style="justify-content:center;margin-top:8px">
+      ${MEMBERS.map(m=>{const cl=mc(m);return`<button class="share-mbtn" data-m="${m}" style="background:${S.dark?cl.darkBg:cl.border};color:white;border-color:transparent;font-size:15px;padding:10px 20px">${esc(m)}</button>`;}).join("")}
+    </div></div>`;
+  document.body.appendChild(o);
+  o.querySelectorAll(".share-mbtn[data-m]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      S.me = btn.dataset.m;
+      localStorage.setItem("tasks-me", S.me);
+      o.remove();
+      then();
+    });
+  });
+}
+
 function openNew() {
+  if (!S.me) { pickIdentity(openNew); return; }
   S.editId = null; S.editOwner = null; S.formOwner = S.me; S.formPri = "none"; S.formCal = false; S.formSharedWith = [];
   showSheet("","","","");
 }
@@ -560,18 +581,6 @@ function showSheet(title, desc, dueDate, dueTime="") {
     <div class="sheet">
       <div class="handle"></div>
       <div class="form-title">${S.editId?"עריכת משימה":"משימה חדשה"}</div>
-      ${!S.editId?`<div class="fg">
-        <label class="flbl">מי אתה?</label>
-        <div class="share-members" id="ownerMembers">
-          ${MEMBERS.map(m=>{
-            const cl=mc(m); const sel=m===S.formOwner;
-            const style=sel
-              ?`background:${S.dark?cl.darkBg:cl.border};color:white;border-color:transparent`
-              :`background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
-            return `<button class="share-mbtn" data-owner="${m}" style="${style}">${esc(m)}</button>`;
-          }).join('')}
-        </div>
-      </div>`:''}
       <div class="fg">
         <label class="flbl">כותרת *</label>
         <input class="finput" id="fTitle" placeholder="מה צריך לעשות?" maxlength="80" value="${esc(title)}">
@@ -623,39 +632,6 @@ function showSheet(title, desc, dueDate, dueTime="") {
   document.body.appendChild(overlay);
 
   // Owner selector (new tasks only)
-  overlay.querySelectorAll(".share-mbtn[data-owner]").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      S.formOwner = btn.dataset.owner;
-      // highlight selected owner
-      overlay.querySelectorAll(".share-mbtn[data-owner]").forEach(b => {
-        const m = b.dataset.owner; const cl = mc(m); const sel = m === S.formOwner;
-        b.style.cssText = sel
-          ? `background:${S.dark?cl.darkBg:cl.border};color:white;border-color:transparent`
-          : `background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
-      });
-      // remove owner from sharedWith
-      S.formSharedWith = S.formSharedWith.filter(m => m !== S.formOwner);
-      // rebuild share-members row to exclude new owner
-      const shareRow = overlay.querySelector("#shareMembers");
-      if (shareRow) {
-        shareRow.innerHTML = MEMBERS.filter(m=>m!==S.formOwner).map(m=>
-          `<button class="share-mbtn" data-member="${m}">${esc(m)}</button>`
-        ).join("");
-        shareRow.querySelectorAll(".share-mbtn[data-member]").forEach(b => {
-          b.addEventListener("click", ev => {
-            ev.stopPropagation();
-            const mb = b.dataset.member;
-            const idx = S.formSharedWith.indexOf(mb);
-            if (idx===-1) S.formSharedWith.push(mb); else S.formSharedWith.splice(idx,1);
-            refreshSharedBtns(overlay);
-          });
-        });
-        refreshSharedBtns(overlay);
-      }
-    });
-  });
-
   // Shared members
   refreshSharedBtns(overlay);
   overlay.querySelectorAll(".share-mbtn[data-member]").forEach(btn => {

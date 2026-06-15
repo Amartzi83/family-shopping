@@ -617,7 +617,15 @@ function toggleAdv(v) {
   } else {
     F.advanceMins = [...F.advanceMins, v].sort((a,b) => a-b);
   }
-  render();
+  const isDk = S.dark;
+  const iBd  = isDk ? '#334155' : '#e2e8f0';
+  document.querySelectorAll('.mem-check[data-adv]').forEach(btn => {
+    const val = Number(btn.dataset.adv);
+    const sel = F.advanceMins.includes(val);
+    btn.style.cssText = sel
+      ? `background:#6366f1;color:white;border:none;`
+      : `background:${isDk ? '#0f172a' : 'white'};color:${isDk ? '#94a3b8' : '#64748b'};border:1.5px solid ${iBd};`;
+  });
 }
 function toggleMem(name) {
   if (F.members.includes(name)) {
@@ -634,7 +642,7 @@ function toggleMem(name) {
     const sel = F.members.includes(m);
     btn.style.cssText = sel
       ? `background:${isDk ? cl.darkBg : cl.border};color:white;border:none;`
-      : `background:${isDk ? '#0f172a' : 'white'};color:${isDk ? '#94a3b8' : '#64748b'};border-color:${iBd};`;
+      : `background:${isDk ? '#0f172a' : 'white'};color:${isDk ? '#94a3b8' : '#64748b'};border:1.5px solid ${iBd};`;
   });
 }
 function setColor(c) { F.color = c; render(); }
@@ -1060,9 +1068,9 @@ function renderForm(isDk) {
       <div class="mems-grid">
         ${ADVANCE.map(o=>{
           const sel = F.advanceMins.includes(o.v);
-          return `<button class="mem-check" onclick="toggleAdv(${o.v})" style="${sel
+          return `<button class="mem-check" data-adv="${o.v}" onclick="toggleAdv(${o.v})" style="${sel
             ?`background:#6366f1;color:white;border:none;`
-            :`background:${isDk?'#0f172a':'white'};color:${isDk?'#94a3b8':'#64748b'};border-color:${iBd};`}">${o.l}</button>`;
+            :`background:${isDk?'#0f172a':'white'};color:${isDk?'#94a3b8':'#64748b'};border:1.5px solid ${iBd};`}">${o.l}</button>`;
         }).join('')}
       </div>
     </div>`:''}

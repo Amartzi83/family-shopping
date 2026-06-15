@@ -556,7 +556,12 @@ async function testNotif() {
 // ACTIONS
 // ══════════════════════════════════════════
 function toggleSearch() { S.showSearch = !S.showSearch; if (!S.showSearch) S.searchQ = ''; render(); setTimeout(()=>document.getElementById('sq')?.focus(),80); }
-function setSearch(v) { S.searchQ = v; render(); }
+function setSearch(v) {
+  S.searchQ = v;
+  render();
+  const sq = document.getElementById('sq');
+  if (sq) { sq.focus(); sq.setSelectionRange(sq.value.length, sq.value.length); }
+}
 
 function pickMe(name) {
   S.me = name; localStorage.setItem("fcal-me", name);
@@ -745,7 +750,8 @@ function render() {
     </div>`;
   }
 
-  if (S.view === 'calendar') h += renderCalendar(isDk);
+  if (S.searchQ.trim()) h += renderAll(isDk);
+  else if (S.view === 'calendar') h += renderCalendar(isDk);
   else if (S.view === 'upcoming') h += renderUpcoming(isDk);
   else h += renderAll(isDk);
 

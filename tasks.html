@@ -144,6 +144,18 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .notif-bar{background:#fff7ed;border:1.5px solid #fdba74;border-radius:12px;padding:10px 14px;margin:10px 16px 0;font-size:12px;color:#92400e;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .notif-bar button{background:#f59e0b;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;font-family:'Rubik',sans-serif;cursor:pointer}
 
+/* Share members picker */
+.share-members{display:flex;gap:8px;flex-wrap:wrap}
+.share-mbtn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 8px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;min-width:52px;transition:all .15s;font-family:'Rubik',sans-serif}
+.share-mbtn.sel{border-color:#6366f1;background:#eef2ff}
+.share-mbtn img{width:32px;height:32px;border-radius:50%;object-fit:cover;object-position:center top}
+.share-mbtn span{font-size:10px;font-weight:600;color:#64748b}
+.share-mbtn.sel span{color:#4f46e5}
+.dark .share-mbtn{background:#0f172a;border-color:#334155}
+.dark .share-mbtn.sel{border-color:#6366f1;background:#1e1b4b}
+.dark .share-mbtn span{color:#94a3b8}
+.chip-shared{background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe}
+
 /* Toggle */
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 13px;background:#f8fafc;border-radius:12px;border:1.5px solid #e2e8f0}
 .toggle-info p{font-size:13px;font-weight:600;color:#1e293b}
@@ -239,16 +251,18 @@ const mc = n => MC[MEMBERS.indexOf(n)] || MC[0];
 
 // ── State ──
 let S = {
-  me:         localStorage.getItem("tasks-me") || "",
-  tab:        "todo",
-  filter:     "all",
-  tasks:      {},
-  connected:  false,
-  loaded:     false,
-  dark:       localStorage.getItem("tasks-dark") === "1",
-  editId:     null,
-  formPri:    "none",
-  formCal:    false,
+  me:             localStorage.getItem("tasks-me") || "",
+  tab:            "todo",
+  filter:         "all",
+  tasks:          {},
+  connected:      false,
+  loaded:         false,
+  dark:           localStorage.getItem("tasks-dark") === "1",
+  editId:         null,
+  editOwner:      null,
+  formPri:        "none",
+  formCal:        false,
+  formSharedWith: [],
 };
 
 if (S.dark) document.body.classList.add("dark");
@@ -275,7 +289,16 @@ function startListeners() {
 function getItems() {
   if (!S.me) return [];
   const mt = S.tasks[S.me] || {};
-  let items = Object.entries(mt).map(([id,t])=>({...t,_id:id})).filter(t=>t.status===S.tab);
+  let items = Object.entries(mt).map(([id,t])=>({...t,_id:id,_owner:S.me})).filter(t=>t.status===S.tab);
+
+  // include tasks shared with me from other members
+  MEMBERS.forEach(member => {
+    if (member === S.me) return;
+    Object.entries(S.tasks[member]||{}).forEach(([id,t]) => {
+      if (t.status === S.tab && Array.isArray(t.sharedWith) && t.sharedWith.includes(S.me))
+        items.push({...t, _id:id, _owner:member});
+    });
+  });
 
   if (S.filter === "cal")       items = items.filter(t => t.calSync);
   else if (S.filter !== "all")  items = items.filter(t => t.priority === S.filter);
@@ -310,7 +333,12 @@ function getItems() {
 
 function cntTab(tab) {
   if (!S.me) return 0;
-  return Object.values(S.tasks[S.me]||{}).filter(t=>t.status===tab).length;
+  let cnt = Object.values(S.tasks[S.me]||{}).filter(t=>t.status===tab).length;
+  MEMBERS.forEach(member => {
+    if (member === S.me) return;
+    cnt += Object.values(S.tasks[member]||{}).filter(t=>t.status===tab && Array.isArray(t.sharedWith) && t.sharedWith.includes(S.me)).length;
+  });
+  return cnt;
 }
 
 // ── Render ──
@@ -421,6 +449,10 @@ function buildTaskHTML(task) {
   if (task.priority && task.priority!=="none") meta += `<span class="meta-chip ${priChip[task.priority]}">${priLabel[task.priority]}</span>`;
   if (task.dueDate) meta += `<span class="meta-chip ${over?"chip-overdue":"chip-date"}">${over?"⚠️ ":"📅 "}${fmtDate(task.dueDate)}${task.dueTime?" "+task.dueTime:""}</span>`;
   if (task.calSync) meta += `<span class="meta-chip chip-cal">🔔 יומן</span>`;
+  const isShared = task._owner && task._owner !== S.me;
+  if (isShared) meta += `<span class="meta-chip chip-shared">👥 מ-${esc(task._owner)}</span>`;
+  if (!isShared && Array.isArray(task.sharedWith) && task.sharedWith.length)
+    meta += `<span class="meta-chip chip-shared">👥 ${task.sharedWith.join(", ")}</span>`;
 
   const c  = mc(S.me);
   const bg = S.dark ? c.darkBg : c.bg;
@@ -428,27 +460,33 @@ function buildTaskHTML(task) {
   const nextStatus = {todo:"doing",doing:"done",done:"todo"};
   const nextLabel  = {todo:"התחל ▶",doing:"סיים ✓",done:"↩ פתח"};
 
+  const owner = task._owner || S.me;
+  const ownerC = mc(owner);
+  const ownerBg = S.dark ? ownerC.darkBg : ownerC.bg;
+  const ownerTx = S.dark ? ownerC.darkText : ownerC.text;
+  const canEdit = owner === S.me;
+
   return `
-    <div class="task-item pri-${task.priority||"none"}" id="ti-${id}" data-id="${id}">
+    <div class="task-item pri-${task.priority||"none"}" id="ti-${id}" data-id="${id}" data-owner="${owner}">
       <div class="drag-handle" data-drag="true">⠿</div>
       <div class="check-wrap">
-        <div class="check-circle ${checkCls}" onclick="cycleStatus('${id}','${task.status}')">${checkIc}</div>
+        <div class="check-circle ${checkCls}" onclick="cycleStatus('${id}','${task.status}','${owner}')">${checkIc}</div>
       </div>
-      <div class="task-body" onclick="openEdit('${id}')">
+      <div class="task-body" onclick="openEdit('${id}','${owner}')">
         <div class="task-title${isDone?" is-done":""}">${esc(task.title)}</div>
         ${task.desc?`<div class="task-desc">${esc(task.desc)}</div>`:""}
         ${meta?`<div class="task-meta">${meta}</div>`:""}
         <div class="task-footer">
           <div class="task-member">
-            <div class="member-dot" style="background:${bg};color:${tx}">
-              <img src="${MEMBER_PHOTOS[S.me]||""}" alt="" onerror="this.style.display='none'">
+            <div class="member-dot" style="background:${ownerBg};color:${ownerTx}">
+              <img src="${MEMBER_PHOTOS[owner]||""}" alt="" onerror="this.style.display='none'">
             </div>
-            ${esc(S.me)}
+            ${esc(owner)}
           </div>
-          <button class="move-btn" onclick="event.stopPropagation();moveTask('${id}','${nextStatus[task.status]}')">${nextLabel[task.status]}</button>
+          <button class="move-btn" onclick="event.stopPropagation();moveTask('${id}','${nextStatus[task.status]}','${owner}')">${nextLabel[task.status]}</button>
         </div>
       </div>
-      <button class="del-btn" onclick="event.stopPropagation();deleteTask('${id}')">×</button>
+      ${canEdit?`<button class="del-btn" onclick="event.stopPropagation();deleteTask('${id}')">×</button>`:`<span style="width:22px"></span>`}
     </div>`;
 }
 
@@ -468,17 +506,19 @@ function toggleDark() {
   render();
 }
 
-function cycleStatus(id, current) {
-  moveTask(id, {todo:"doing",doing:"done",done:"todo"}[current]);
+function cycleStatus(id, current, owner) {
+  moveTask(id, {todo:"doing",doing:"done",done:"todo"}[current], owner);
 }
-function moveTask(id, newStatus) {
-  db.ref(`tasks/${S.me}/${id}`).update({status:newStatus});
+function moveTask(id, newStatus, owner) {
+  owner = owner || S.me;
+  db.ref(`tasks/${owner}/${id}`).update({status:newStatus});
   toast({doing:"משימה בתהליך ⚡",done:"משימה הושלמה ✅",todo:"משימה נפתחה מחדש 🔄"}[newStatus]);
 }
 function deleteTask(id) {
+  const owner = S.editOwner || S.me;
   const el = document.getElementById("ti-"+id);
   if (el) el.classList.add("removing");
-  setTimeout(() => db.ref(`tasks/${S.me}/${id}`).remove(), 320);
+  setTimeout(() => db.ref(`tasks/${owner}/${id}`).remove(), 320);
   toast("משימה נמחקה");
   closeSheet();
 }
@@ -518,14 +558,17 @@ function checkNotifications() {
 // ── Sheet ──
 function openNew() {
   if (!S.me) { toast("בחר תחילה מי אתה"); return; }
-  S.editId = null; S.formPri = "none"; S.formCal = false;
-  showSheet("","","");
+  S.editId = null; S.editOwner = null; S.formPri = "none"; S.formCal = false; S.formSharedWith = [];
+  showSheet("","","","");
 }
-function openEdit(id) {
-  const task = (S.tasks[S.me]||{})[id];
+function openEdit(id, owner) {
+  owner = owner || S.me;
+  const task = (S.tasks[owner]||{})[id];
   if (!task) return;
-  S.editId = id; S.formPri = task.priority||"none";
+  S.editId = id; S.editOwner = owner;
+  S.formPri = task.priority||"none";
   S.formCal = !!task.calSync;
+  S.formSharedWith = Array.isArray(task.sharedWith) ? [...task.sharedWith] : [];
   showSheet(task.title||"", task.desc||"", task.dueDate||"", task.dueTime||"");
 }
 
@@ -556,6 +599,16 @@ function showSheet(title, desc, dueDate, dueTime="") {
         </div>
       </div>
       <div class="fg">
+        <label class="flbl">שתף עם</label>
+        <div class="share-members" id="shareMembers">
+          ${MEMBERS.filter(m=>m!==S.me).map(m=>`
+            <button class="share-mbtn" data-member="${m}">
+              <img src="${MEMBER_PHOTOS[m]}" onerror="this.style.display='none'">
+              <span>${esc(m)}</span>
+            </button>`).join("")}
+        </div>
+      </div>
+      <div class="fg">
         <label class="flbl">תאריך יעד (אופציונלי)</label>
         <input class="finput" type="date" id="fDate" value="${dueDate}">
       </div>
@@ -580,6 +633,18 @@ function showSheet(title, desc, dueDate, dueTime="") {
     </div>`;
 
   document.body.appendChild(overlay);
+
+  // Shared members
+  refreshSharedBtns(overlay);
+  overlay.querySelectorAll(".share-mbtn[data-member]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const m = btn.dataset.member;
+      const idx = S.formSharedWith.indexOf(m);
+      if (idx === -1) S.formSharedWith.push(m); else S.formSharedWith.splice(idx,1);
+      refreshSharedBtns(overlay);
+    });
+  });
 
   // Priority
   refreshPriBtns(overlay);
@@ -610,6 +675,12 @@ function showSheet(title, desc, dueDate, dueTime="") {
   setTimeout(() => { const f=overlay.querySelector("#fTitle"); if(f) f.focus(); }, 350);
 }
 
+function refreshSharedBtns(overlay) {
+  overlay.querySelectorAll(".share-mbtn[data-member]").forEach(btn => {
+    btn.classList.toggle("sel", S.formSharedWith.includes(btn.dataset.member));
+  });
+}
+
 function refreshPriBtns(overlay) {
   overlay.querySelectorAll(".pri-btn[data-pri]").forEach(btn => {
     const p = btn.dataset.pri;
@@ -629,22 +700,23 @@ function saveTask() {
   const dueTime = document.getElementById("fTime").value||null;
   if (!title) { toast("חסרה כותרת"); return; }
 
+  const owner = S.editOwner || S.me;
   const data = {
     title, desc,
-    priority:  S.formPri,
-    dueDate:   dueDate||null,
-    dueTime:   dueTime||null,
-    calSync:   S.formCal,
-    status:    S.editId ? ((S.tasks[S.me]||{})[S.editId]||{}).status||"todo" : "todo",
-    updatedAt: Date.now(),
+    priority:    S.formPri,
+    dueDate:     dueDate||null,
+    dueTime:     dueTime||null,
+    calSync:     S.formCal,
+    sharedWith:  S.formSharedWith.length ? S.formSharedWith : null,
+    status:      S.editId ? ((S.tasks[owner]||{})[S.editId]||{}).status||"todo" : "todo",
+    updatedAt:   Date.now(),
   };
 
   if (S.editId) {
-    db.ref(`tasks/${S.me}/${S.editId}`).update(data);
+    db.ref(`tasks/${owner}/${S.editId}`).update(data);
     toast("משימה עודכנה ✓");
   } else {
     data.createdAt = Date.now();
-    // assign ord = max existing + 1
     const existing = Object.values(S.tasks[S.me]||{}).filter(t=>t.status==="todo");
     data.ord = existing.length ? Math.max(...existing.map(t=>t.ord||0))+1 : 0;
     db.ref(`tasks/${S.me}`).push(data);

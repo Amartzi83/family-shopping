@@ -254,6 +254,7 @@ let S = {
   dark:           localStorage.getItem("tasks-dark") === "1",
   editId:         null,
   editOwner:      null,
+  formOwner:      "",
   formPri:        "none",
   formCal:        false,
   formSharedWith: [],
@@ -536,8 +537,7 @@ function checkNotifications() {
 
 // ── Sheet ──
 function openNew() {
-  if (!S.me) { toast("בחר תחילה מי אתה"); return; }
-  S.editId = null; S.editOwner = null; S.formPri = "none"; S.formCal = false; S.formSharedWith = [];
+  S.editId = null; S.editOwner = null; S.formOwner = S.me; S.formPri = "none"; S.formCal = false; S.formSharedWith = [];
   showSheet("","","","");
 }
 function openEdit(id, owner) {
@@ -564,7 +564,7 @@ function showSheet(title, desc, dueDate, dueTime="") {
         <label class="flbl">מי אתה?</label>
         <div class="share-members" id="ownerMembers">
           ${MEMBERS.map(m=>{
-            const cl=mc(m); const sel=m===S.me;
+            const cl=mc(m); const sel=m===S.formOwner;
             const style=sel
               ?`background:${S.dark?cl.darkBg:cl.border};color:white;border-color:transparent`
               :`background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
@@ -592,7 +592,7 @@ function showSheet(title, desc, dueDate, dueTime="") {
       <div class="fg">
         <label class="flbl">שיתוף שם</label>
         <div class="share-members" id="shareMembers">
-          ${MEMBERS.filter(m=>m!==S.me).map(m=>`
+          ${MEMBERS.filter(m=>m!==S.formOwner).map(m=>`
             <button class="share-mbtn" data-member="${m}">${esc(m)}</button>`).join("")}
         </div>
       </div>
@@ -626,21 +626,20 @@ function showSheet(title, desc, dueDate, dueTime="") {
   overlay.querySelectorAll(".share-mbtn[data-owner]").forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
-      S.me = btn.dataset.owner;
-      localStorage.setItem("tasks-me", S.me);
-      // refresh shared buttons (exclude new me)
+      S.formOwner = btn.dataset.owner;
+      // highlight selected owner
       overlay.querySelectorAll(".share-mbtn[data-owner]").forEach(b => {
-        const m = b.dataset.owner; const cl = mc(m); const sel = m === S.me;
+        const m = b.dataset.owner; const cl = mc(m); const sel = m === S.formOwner;
         b.style.cssText = sel
           ? `background:${S.dark?cl.darkBg:cl.border};color:white;border-color:transparent`
           : `background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
       });
-      // remove self from sharedWith if accidentally selected
-      S.formSharedWith = S.formSharedWith.filter(m => m !== S.me);
-      // rebuild share-members row to exclude new me
+      // remove owner from sharedWith
+      S.formSharedWith = S.formSharedWith.filter(m => m !== S.formOwner);
+      // rebuild share-members row to exclude new owner
       const shareRow = overlay.querySelector("#shareMembers");
       if (shareRow) {
-        shareRow.innerHTML = MEMBERS.filter(m=>m!==S.me).map(m=>
+        shareRow.innerHTML = MEMBERS.filter(m=>m!==S.formOwner).map(m=>
           `<button class="share-mbtn" data-member="${m}">${esc(m)}</button>`
         ).join("");
         shareRow.querySelectorAll(".share-mbtn[data-member]").forEach(b => {
@@ -731,7 +730,8 @@ function saveTask() {
   const dueTime = document.getElementById("fTime").value||null;
   if (!title) { toast("חסרה כותרת"); return; }
 
-  const owner = S.editOwner || S.me;
+  const owner = S.editId ? (S.editOwner || S.me) : (S.formOwner || S.me);
+  if (!owner) { toast("בחר תחילה מי אתה"); return; }
   const data = {
     title, desc,
     priority:    S.formPri,
@@ -747,10 +747,13 @@ function saveTask() {
     db.ref(`tasks/${owner}/${S.editId}`).update(data);
     toast("משימה עודכנה ✓");
   } else {
+    // save selected owner as current user
+    S.me = owner;
+    localStorage.setItem("tasks-me", owner);
     data.createdAt = Date.now();
-    const existing = Object.values(S.tasks[S.me]||{}).filter(t=>t.status==="todo");
+    const existing = Object.values(S.tasks[owner]||{}).filter(t=>t.status==="todo");
     data.ord = existing.length ? Math.max(...existing.map(t=>t.ord||0))+1 : 0;
-    db.ref(`tasks/${S.me}`).push(data);
+    db.ref(`tasks/${owner}`).push(data);
     toast("משימה נוספה ✅");
   }
 

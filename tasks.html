@@ -357,14 +357,6 @@ function buildPage() {
     return `style="background:${tabActiveBg[tab]};color:white"`;
   };
 
-  const membersHtml = MEMBERS.map(name => {
-    const isMe = name === S.me;
-    const c = mc(name);
-    const style = isMe
-      ? `background:${S.dark?c.darkBg:c.border};color:white;border-color:transparent`
-      : `background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
-    return `<button class="share-mbtn" onclick="selectMe('${name}')" style="${style}">${esc(name)}</button>`;
-  }).join("");
 
   const filters = [
     {id:"all",  label:"הכל"},
@@ -401,7 +393,6 @@ function buildPage() {
         <div class="header-title">✅ משימות <span class="sync-dot ${S.connected?"on":"off"}"></span></div>
         <button class="header-icon-btn" onclick="toggleDark()">${S.dark?"☀️":"🌙"}</button>
       </div>
-      <div class="members-row">${membersHtml}</div>
     </div>
     <div class="tabs">
       <button class="tab-btn" ${tabStyle("todo")} onclick="setTab('todo')">

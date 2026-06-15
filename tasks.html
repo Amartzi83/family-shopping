@@ -392,7 +392,10 @@ function buildPage() {
       <div class="header-top">
         <button class="header-icon-btn" onclick="location.href='home.html'">🏠</button>
         <div class="header-title">✅ משימות <span class="sync-dot ${S.connected?"on":"off"}"></span></div>
-        <button class="header-icon-btn" onclick="toggleDark()">${S.dark?"☀️":"🌙"}</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${S.me?`<button onclick="pickIdentity(render)" style="border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;border:1.5px solid ${mc(S.me).border};background:${S.dark?mc(S.me).darkBg:mc(S.me).bg};color:${S.dark?mc(S.me).darkText:mc(S.me).text};cursor:pointer;font-family:'Rubik',sans-serif">${esc(S.me)}</button>`:`<button class="header-icon-btn" onclick="pickIdentity(render)">👤</button>`}
+          <button class="header-icon-btn" onclick="toggleDark()">${S.dark?"☀️":"🌙"}</button>
+        </div>
       </div>
     </div>
     <div class="tabs">

@@ -617,7 +617,7 @@ function toggleAdv(v) {
   } else {
     F.advanceMins = [...F.advanceMins, v].sort((a,b) => a-b);
   }
-  const isDk = S.dark;
+  const isDk = dk();
   const iBd  = isDk ? '#334155' : '#e2e8f0';
   document.querySelectorAll('.mem-check[data-adv]').forEach(btn => {
     const val = Number(btn.dataset.adv);
@@ -633,7 +633,7 @@ function toggleMem(name) {
   } else {
     F.members = [...F.members, name];
   }
-  const isDk = S.dark;
+  const isDk = dk();
   const iBd  = isDk ? '#334155' : '#e2e8f0';
   document.querySelectorAll('.mem-check[data-member]').forEach(btn => {
     const m   = btn.dataset.member;

@@ -560,6 +560,18 @@ function showSheet(title, desc, dueDate, dueTime="") {
     <div class="sheet">
       <div class="handle"></div>
       <div class="form-title">${S.editId?"עריכת משימה":"משימה חדשה"}</div>
+      ${!S.editId?`<div class="fg">
+        <label class="flbl">מי אתה?</label>
+        <div class="share-members" id="ownerMembers">
+          ${MEMBERS.map(m=>{
+            const cl=mc(m); const sel=m===S.me;
+            const style=sel
+              ?`background:${S.dark?cl.darkBg:cl.border};color:white;border-color:transparent`
+              :`background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
+            return `<button class="share-mbtn" data-owner="${m}" style="${style}">${esc(m)}</button>`;
+          }).join('')}
+        </div>
+      </div>`:''}
       <div class="fg">
         <label class="flbl">כותרת *</label>
         <input class="finput" id="fTitle" placeholder="מה צריך לעשות?" maxlength="80" value="${esc(title)}">
@@ -609,6 +621,41 @@ function showSheet(title, desc, dueDate, dueTime="") {
     </div>`;
 
   document.body.appendChild(overlay);
+
+  // Owner selector (new tasks only)
+  overlay.querySelectorAll(".share-mbtn[data-owner]").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      S.me = btn.dataset.owner;
+      localStorage.setItem("tasks-me", S.me);
+      // refresh shared buttons (exclude new me)
+      overlay.querySelectorAll(".share-mbtn[data-owner]").forEach(b => {
+        const m = b.dataset.owner; const cl = mc(m); const sel = m === S.me;
+        b.style.cssText = sel
+          ? `background:${S.dark?cl.darkBg:cl.border};color:white;border-color:transparent`
+          : `background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
+      });
+      // remove self from sharedWith if accidentally selected
+      S.formSharedWith = S.formSharedWith.filter(m => m !== S.me);
+      // rebuild share-members row to exclude new me
+      const shareRow = overlay.querySelector("#shareMembers");
+      if (shareRow) {
+        shareRow.innerHTML = MEMBERS.filter(m=>m!==S.me).map(m=>
+          `<button class="share-mbtn" data-member="${m}">${esc(m)}</button>`
+        ).join("");
+        shareRow.querySelectorAll(".share-mbtn[data-member]").forEach(b => {
+          b.addEventListener("click", ev => {
+            ev.stopPropagation();
+            const mb = b.dataset.member;
+            const idx = S.formSharedWith.indexOf(mb);
+            if (idx===-1) S.formSharedWith.push(mb); else S.formSharedWith.splice(idx,1);
+            refreshSharedBtns(overlay);
+          });
+        });
+        refreshSharedBtns(overlay);
+      }
+    });
+  });
 
   // Shared members
   refreshSharedBtns(overlay);

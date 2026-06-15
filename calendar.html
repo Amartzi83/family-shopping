@@ -627,9 +627,10 @@ function toggleMem(name) {
   }
   const isDk = S.dark;
   const iBd  = isDk ? '#334155' : '#e2e8f0';
-  document.querySelectorAll('.mems-grid .mem-check').forEach((btn, i) => {
-    const m  = MEMBERS[i];
-    const cl = MC[i];
+  document.querySelectorAll('.mem-check[data-member]').forEach(btn => {
+    const m   = btn.dataset.member;
+    const i   = MEMBERS.indexOf(m);
+    const cl  = MC[i];
     const sel = F.members.includes(m);
     btn.style.cssText = sel
       ? `background:${isDk ? cl.darkBg : cl.border};color:white;border:none;`
@@ -1046,7 +1047,7 @@ function renderForm(isDk) {
       <div class="mems-grid">
         ${MEMBERS.map((m,i)=>{
           const cl=MC[i]; const sel=F.members.includes(m);
-          return `<button class="mem-check" onclick="toggleMem('${esc(m)}')" style="${sel
+          return `<button class="mem-check" data-member="${esc(m)}" onclick="toggleMem('${esc(m)}')" style="${sel
             ?`background:${isDk?cl.darkBg:cl.border};color:white;border:none;`
             :`background:${isDk?'#0f172a':'white'};color:${isDk?'#94a3b8':'#64748b'};border-color:${iBd};`}">${esc(m)}</button>`;
         }).join('')}

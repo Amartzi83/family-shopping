@@ -145,15 +145,11 @@ textarea.finput{resize:none;min-height:68px;line-height:1.5}
 .notif-bar button{background:#f59e0b;color:white;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;font-family:'Rubik',sans-serif;cursor:pointer}
 
 /* Share members picker */
-.share-members{display:flex;gap:8px;flex-wrap:wrap}
-.share-mbtn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 8px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;min-width:52px;transition:all .15s;font-family:'Rubik',sans-serif}
-.share-mbtn.sel{border-color:#6366f1;background:#eef2ff}
-.share-mbtn img{width:32px;height:32px;border-radius:50%;object-fit:cover;object-position:center top}
-.share-mbtn span{font-size:10px;font-weight:600;color:#64748b}
-.share-mbtn.sel span{color:#4f46e5}
-.dark .share-mbtn{background:#0f172a;border-color:#334155}
-.dark .share-mbtn.sel{border-color:#6366f1;background:#1e1b4b}
-.dark .share-mbtn span{color:#94a3b8}
+.share-members{display:flex;gap:6px;flex-wrap:wrap}
+.share-mbtn{padding:8px 14px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;font-family:'Rubik',sans-serif;font-size:12px;font-weight:700;color:#64748b;cursor:pointer;transition:all .15s}
+.share-mbtn.sel{border-color:#6366f1;background:#eef2ff;color:#4f46e5}
+.dark .share-mbtn{background:#0f172a;border-color:#334155;color:#94a3b8}
+.dark .share-mbtn.sel{border-color:#6366f1;background:#1e1b4b;color:#a5b4fc}
 .chip-shared{background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe}
 
 /* Toggle */
@@ -599,13 +595,10 @@ function showSheet(title, desc, dueDate, dueTime="") {
         </div>
       </div>
       <div class="fg">
-        <label class="flbl">שתף עם</label>
+        <label class="flbl">שיתוף שם</label>
         <div class="share-members" id="shareMembers">
           ${MEMBERS.filter(m=>m!==S.me).map(m=>`
-            <button class="share-mbtn" data-member="${m}">
-              <img src="${MEMBER_PHOTOS[m]}" onerror="this.style.display='none'">
-              <span>${esc(m)}</span>
-            </button>`).join("")}
+            <button class="share-mbtn" data-member="${m}">${esc(m)}</button>`).join("")}
         </div>
       </div>
       <div class="fg">

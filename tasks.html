@@ -198,6 +198,7 @@ body.dark{background:#0f172a;color:#e2e8f0}
 .dark .toggle-info p{color:#e2e8f0}
 .dark .toggle-info span{color:#64748b}
 .dark .toggle{background:#334155}
+.dark .toggle.on{background:#6366f1}
 .dark .btn-cancel{background:#334155;color:#94a3b8}
 .dark .btn-delete{background:#7f1d1d;color:#fca5a5}
 .dark .handle{background:#334155}
@@ -418,7 +419,7 @@ function buildTaskHTML(task) {
   const priChip  = {high:"chip-high",med:"chip-med",low:"chip-low"};
   let meta = "";
   if (task.priority && task.priority!=="none") meta += `<span class="meta-chip ${priChip[task.priority]}">${priLabel[task.priority]}</span>`;
-  if (task.dueDate) meta += `<span class="meta-chip ${over?"chip-overdue":"chip-date"}">${over?"⚠️ ":"📅 "}${fmtDate(task.dueDate)}</span>`;
+  if (task.dueDate) meta += `<span class="meta-chip ${over?"chip-overdue":"chip-date"}">${over?"⚠️ ":"📅 "}${fmtDate(task.dueDate)}${task.dueTime?" "+task.dueTime:""}</span>`;
   if (task.calSync) meta += `<span class="meta-chip chip-cal">🔔 יומן</span>`;
 
   const c  = mc(S.me);
@@ -525,10 +526,10 @@ function openEdit(id) {
   if (!task) return;
   S.editId = id; S.formPri = task.priority||"none";
   S.formCal = !!task.calSync;
-  showSheet(task.title||"", task.desc||"", task.dueDate||"");
+  showSheet(task.title||"", task.desc||"", task.dueDate||"", task.dueTime||"");
 }
 
-function showSheet(title, desc, dueDate) {
+function showSheet(title, desc, dueDate, dueTime="") {
   const priL = {high:"🔴 גבוהה", med:"🟠 בינונית", low:"🟢 נמוכה", none:"⬜ ללא"};
 
   const overlay = document.createElement("div");
@@ -559,7 +560,11 @@ function showSheet(title, desc, dueDate) {
         <input class="finput" type="date" id="fDate" value="${dueDate}">
       </div>
       <div class="fg">
-        <div class="toggle-row">
+        <label class="flbl">שעת תזכורת (אופציונלי)</label>
+        <input class="finput" type="time" id="fTime" value="${dueTime}">
+      </div>
+      <div class="fg">
+        <div class="toggle-row" id="calToggleRow" style="cursor:pointer">
           <div class="toggle-info">
             <p>🗓 הוסף תזכורת ביומן</p>
             <span>יופיע ביומן המשפחתי המשותף</span>
@@ -586,9 +591,9 @@ function showSheet(title, desc, dueDate) {
     });
   });
 
-  // Calendar toggle
+  // Calendar toggle — clicking anywhere on the row toggles it
   if (S.formCal) overlay.querySelector("#calToggle").classList.add("on");
-  overlay.querySelector("#calToggle").addEventListener("click", e => {
+  overlay.querySelector("#calToggleRow").addEventListener("click", e => {
     e.stopPropagation();
     S.formCal = !S.formCal;
     overlay.querySelector("#calToggle").classList.toggle("on", S.formCal);
@@ -621,12 +626,14 @@ function saveTask() {
   const title   = (document.getElementById("fTitle").value||"").trim();
   const desc    = (document.getElementById("fDesc").value||"").trim();
   const dueDate = document.getElementById("fDate").value||null;
+  const dueTime = document.getElementById("fTime").value||null;
   if (!title) { toast("חסרה כותרת"); return; }
 
   const data = {
     title, desc,
     priority:  S.formPri,
     dueDate:   dueDate||null,
+    dueTime:   dueTime||null,
     calSync:   S.formCal,
     status:    S.editId ? ((S.tasks[S.me]||{})[S.editId]||{}).status||"todo" : "todo",
     updatedAt: Date.now(),
@@ -646,7 +653,7 @@ function saveTask() {
 
   if (S.formCal && dueDate) {
     db.ref("calendar/events").push({
-      title:`✅ ${title}`, date:dueDate, time:null, allDay:true,
+      title:`✅ ${title}`, date:dueDate, time:dueTime||null, allDay:!dueTime,
       repeat:"none", customDays:null, endDate:null,
       members:[S.me], advanceMins:[60], color:"#6366f1",
       note:desc||"", addedBy:S.me, addedAt:Date.now(),

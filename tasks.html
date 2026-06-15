@@ -360,16 +360,10 @@ function buildPage() {
   const membersHtml = MEMBERS.map(name => {
     const isMe = name === S.me;
     const c = mc(name);
-    const border = isMe ? `border-color:${c.border}` : "border-color:transparent";
-    return `
-      <div class="member-avatar-wrap" onclick="selectMe('${name}')">
-        <div class="member-avatar" style="${border}">
-          <img src="${MEMBER_PHOTOS[name]}" alt="${esc(name)}"
-               onerror="this.style.display='none';this.parentNode.insertAdjacentText('beforeend','${name[0]}')">
-          ${isMe?`<div class="member-me-badge">אני</div>`:""}
-        </div>
-        <div class="member-name${isMe?" is-me":""}">${esc(name)}</div>
-      </div>`;
+    const style = isMe
+      ? `background:${S.dark?c.darkBg:c.border};color:white;border-color:transparent`
+      : `background:${S.dark?'#0f172a':'white'};color:${S.dark?'#94a3b8':'#64748b'};border-color:${S.dark?'#334155':'#e2e8f0'}`;
+    return `<button class="share-mbtn" onclick="selectMe('${name}')" style="${style}">${esc(name)}</button>`;
   }).join("");
 
   const filters = [

@@ -541,23 +541,28 @@ async function registerFCMToken(memberName) {
 }
 
 async function testNotif() {
-  if (Notification.permission === 'denied') {
-    toast('❌ חסמת התראות — שחרר בהגדרות הדפדפן/אנדרואיד');
+  const perm = Notification.permission;
+  const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+  const swOk  = !!swReg;
+
+  // Show diagnostic info
+  toast(`מצב: ${perm} | SW: ${swOk ? '✅' : '❌'} | API: ${'Notification' in window ? '✅' : '❌'}`, 5000);
+
+  if (perm === 'denied') {
+    setTimeout(() => toast('⚙️ לך להגדרות אנדרואיד ← אפליקציות ← Chrome ← הרשאות ← התראות ← אתרים', 6000), 1500);
     return;
   }
-  if (Notification.permission !== 'granted') {
-    toast('⏳ מבקש הרשאת התראות...');
-    const granted = await askNotifPermission();
-    if (!granted) { toast('❌ ההרשאה נדחתה'); return; }
+  if (perm !== 'granted') {
+    const granted = await Notification.requestPermission();
+    if (granted !== 'granted') { toast('❌ ההרשאה נדחתה'); return; }
     if (S.me) await registerFCMToken(S.me);
   }
-  const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
-  if (!swReg) { toast('❌ Service Worker לא נמצא — פתח את האפליקציה דרך HTTPS'); return; }
+  if (!swReg) { toast('❌ SW לא נמצא'); return; }
   await swReg.showNotification('🔔 בדיקת התראה', {
-    body: 'אם אתה רואה זאת — ההתראות עובדות!',
+    body: 'ההתראות עובדות!',
     requireInteraction: true, dir: 'rtl', lang: 'he',
   });
-  toast('✅ התראת בדיקה נשלחה');
+  toast('✅ נשלחה');
 }
 
 // ══════════════════════════════════════════

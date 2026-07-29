@@ -541,32 +541,30 @@ async function registerFCMToken(memberName) {
 }
 
 async function testNotif() {
-  const perm = Notification.permission;
-  const hasApi = 'Notification' in window;
-  const swReg  = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+  // Must request permission FIRST — before any await, to stay within user gesture
+  let perm = Notification.permission;
+  if (perm === 'default') {
+    perm = await Notification.requestPermission();
+  }
 
-  // Persistent diagnostic dialog
-  const info = `מצב הרשאה: ${perm}\nNotification API: ${hasApi ? 'קיים' : 'חסר'}\nService Worker: ${swReg ? 'רשום ✅' : 'לא רשום ❌'}`;
-  alert(info);
-
-  if (!hasApi) { toast('❌ הדפדפן לא תומך בהתראות'); return; }
+  const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
 
   if (perm === 'denied') {
-    alert('ההרשאה חסומה.\n\nכדי לשחרר:\nChrome ← ⋮ ← הגדרות ← הגדרות אתר ← התראות ← הוסף אתר:\namartzi83.github.io');
+    toast('❌ ההרשאה חסומה — פתח: chrome://settings/content/notifications', 5000);
     return;
   }
-
   if (perm !== 'granted') {
-    const result = await Notification.requestPermission();
-    alert(`תוצאת הבקשה: ${result}`);
-    if (result !== 'granted') return;
-    if (S.me) await registerFCMToken(S.me);
+    toast('❌ ההרשאה לא ניתנה'); return;
+  }
+  if (!swReg) {
+    toast('❌ Service Worker לא נמצא'); return;
   }
 
-  if (!swReg) { toast('❌ SW לא נמצא — פתח דרך HTTPS'); return; }
+  if (S.me) await registerFCMToken(S.me);
   await swReg.showNotification('🔔 בדיקת התראה', {
     body: 'ההתראות עובדות!',
     requireInteraction: true, dir: 'rtl', lang: 'he',
+    icon: '/family-shopping/img/family.jpg',
   });
   toast('✅ התראה נשלחה!');
 }

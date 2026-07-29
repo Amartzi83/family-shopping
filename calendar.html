@@ -541,15 +541,23 @@ async function registerFCMToken(memberName) {
 }
 
 async function testNotif() {
-  if (Notification.permission !== 'granted') { toast('❌ התראות לא מאושרות'); return; }
-  const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
-  if (swReg) {
-    await swReg.showNotification('🔔 בדיקת התראה', {
-      body: 'אם אתה רואה זאת — ההתראות עובדות!',
-      requireInteraction: true, dir: 'rtl', lang: 'he',
-    });
+  if (Notification.permission === 'denied') {
+    toast('❌ חסמת התראות — שחרר בהגדרות הדפדפן/אנדרואיד');
+    return;
   }
-  toast('📤 התראת בדיקה נשלחה');
+  if (Notification.permission !== 'granted') {
+    toast('⏳ מבקש הרשאת התראות...');
+    const granted = await askNotifPermission();
+    if (!granted) { toast('❌ ההרשאה נדחתה'); return; }
+    if (S.me) await registerFCMToken(S.me);
+  }
+  const swReg = await navigator.serviceWorker.getRegistration('./firebase-messaging-sw.js');
+  if (!swReg) { toast('❌ Service Worker לא נמצא — פתח את האפליקציה דרך HTTPS'); return; }
+  await swReg.showNotification('🔔 בדיקת התראה', {
+    body: 'אם אתה רואה זאת — ההתראות עובדות!',
+    requireInteraction: true, dir: 'rtl', lang: 'he',
+  });
+  toast('✅ התראת בדיקה נשלחה');
 }
 
 // ══════════════════════════════════════════

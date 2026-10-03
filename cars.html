@@ -525,9 +525,9 @@ function loadData() {
     carNotes = snap.val() || {};
     if (view === 'detail') renderDetail();
   });
-  db.ref('cars_links').on('value', snap => {
+  db.ref('car_links_global').on('value', snap => {
     links = snap.val() || {};
-    if (view === 'detail') renderDetail();
+    if (view === 'list') renderList();
   });
 }
 
@@ -588,7 +588,29 @@ function renderList() {
       ${entries.length > 0 ? `<div class="header-sub">${entries.length} רכבים${totalAlerts > 0 ? ` · ⚠️ ${totalAlerts} התראות` : ' · הכל תקין ✓'}</div>` : ''}
     </div>
     <div class="section">${cards}</div>
-    ${entries.length ? '<div style="height:84px"></div>' : ''}
+    <div class="section" style="padding-top:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#64748b">🔗 אתרים שימושיים</div>
+        <button onclick="openLinkModal()" style="font-size:12px;font-weight:600;color:#0369a1;background:#eff6ff;border-radius:8px;padding:5px 11px">+ הוסף</button>
+      </div>
+      ${Object.entries(links).length
+        ? Object.entries(links).map(([id, lnk]) => `
+            <div style="position:relative;margin-bottom:8px">
+              <a class="link-card" href="${esc(lnk.url||'#')}" target="_blank" rel="noopener">
+                <div class="link-icon">🔗</div>
+                <div class="link-info">
+                  <div class="link-name">${esc(lnk.name||'אתר')}</div>
+                  <div class="link-url">${esc(lnk.url||'')}</div>
+                  ${lnk.note ? `<div class="link-note">${esc(lnk.note)}</div>` : ''}
+                </div>
+              </a>
+              <button class="link-del" style="position:absolute;top:12px;left:8px"
+                      onclick="event.preventDefault();deleteLink('${id}')">🗑️</button>
+            </div>`).join('')
+        : `<div class="no-links">הוסף אתרים שימושיים — יד2, Start My Car, בדיקת רכב ועוד</div>`
+      }
+    </div>
+    <div style="height:84px"></div>
     <button class="fab" onclick="openCarModal()">+ הוסף רכב</button>`;
 }
 
@@ -680,30 +702,6 @@ function renderDetail() {
       <button class="add-exp-btn" onclick="openExpenseModal()">+ הוסף הוצאה</button>
       ${expRows}`;
 
-  } else if (activeTab === 'links') {
-    const carLinks = Object.entries(links[selCarId] || {})
-      .sort((a,b) => (a[1].name||'').localeCompare(b[1].name||''));
-
-    const linkCards = carLinks.length
-      ? carLinks.map(([id, lnk]) => `
-          <div style="position:relative">
-            <a class="link-card" href="${esc(lnk.url||'#')}" target="_blank" rel="noopener">
-              <div class="link-icon">🔗</div>
-              <div class="link-info">
-                <div class="link-name">${esc(lnk.name||'אתר')}</div>
-                <div class="link-url">${esc(lnk.url||'')}</div>
-                ${lnk.note ? `<div class="link-note">${esc(lnk.note)}</div>` : ''}
-              </div>
-            </a>
-            <button class="link-del" style="position:absolute;top:12px;left:8px"
-                    onclick="event.stopPropagation();deleteLink('${id}')">🗑️</button>
-          </div>`).join('')
-      : `<div class="no-links">אין קישורים עדיין<br><span style="font-size:11px">הוסף אתרים שימושיים לרכב הזה</span></div>`;
-
-    tabContent = `
-      <button class="add-link-btn" onclick="openLinkModal()">+ הוסף אתר / קישור</button>
-      ${linkCards}`;
-
   } else { // info
     tabContent = `
       ${car.make  ? `<div class="info-row"><div class="info-label">יצרן</div><div class="info-val">${esc(car.make)}</div></div>` : ''}
@@ -742,7 +740,6 @@ function renderDetail() {
       <div class="tabs">
         <div class="tab ${activeTab==='maint'    ?'active':''}" onclick="switchTab('maint')">🔧 תחזוקה</div>
         <div class="tab ${activeTab==='expenses' ?'active':''}" onclick="switchTab('expenses')">💰 הוצאות</div>
-        <div class="tab ${activeTab==='links'    ?'active':''}" onclick="switchTab('links')">🔗 קישורים</div>
         <div class="tab ${activeTab==='info'     ?'active':''}" onclick="switchTab('info')">ℹ️ פרטים</div>
       </div>
     </div>
@@ -1206,7 +1203,7 @@ function submitLinkForm() {
   const url  = document.getElementById('l-url').value.trim();
   const note = document.getElementById('l-note').value.trim();
   if (!name && !url) return;
-  db.ref(`cars_links/${selCarId}`).push({
+  db.ref('car_links_global').push({
     name: name || url,
     url:  url  || null,
     note: note || null,
@@ -1215,7 +1212,7 @@ function submitLinkForm() {
 }
 
 function deleteLink(id) {
-  db.ref(`cars_links/${selCarId}/${id}`).remove();
+  db.ref(`car_links_global/${id}`).remove();
 }
 
 function confirmDeleteCar() {

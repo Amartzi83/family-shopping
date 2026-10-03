@@ -350,6 +350,34 @@ body.dark .modal-section{border-color:#334155}
 body.dark .alert-banner{background:linear-gradient(135deg,#2d1515,#2d1e0f);border-color:#7f1d1d}
 body.dark .alert-banner-item{color:#fca5a5}
 body.dark .service-total-row{background:#134e4a;border-color:#0f766e;color:#5eead4}
+
+/* ── Links tab ── */
+.link-card{
+  background:white;border-radius:14px;padding:14px 16px;
+  margin-bottom:10px;box-shadow:0 1px 8px rgba(0,0,0,.06);
+  display:flex;align-items:center;gap:12px;
+  cursor:pointer;transition:transform .15s;text-decoration:none;
+}
+.link-card:active{transform:scale(.98)}
+.link-icon{font-size:28px;flex-shrink:0}
+.link-info{flex:1;min-width:0}
+.link-name{font-size:15px;font-weight:600;color:#1e293b}
+.link-url{font-size:11px;color:#0891b2;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.link-note{font-size:11px;color:#94a3b8;margin-top:2px}
+.link-del{font-size:16px;color:#fca5a5;padding:4px 8px;flex-shrink:0}
+.add-link-btn{
+  background:white;border-radius:14px;padding:14px 16px;
+  margin-bottom:10px;box-shadow:0 1px 8px rgba(0,0,0,.06);
+  width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14px;font-weight:600;color:#0369a1;
+  border:2px dashed #bae6fd;transition:background .15s;
+}
+.add-link-btn:active{background:#f0f9ff}
+.no-links{text-align:center;padding:40px 20px;color:#94a3b8;font-size:13px;background:white;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+body.dark .link-card{background:#1e293b}
+body.dark .link-name{color:#e2e8f0}
+body.dark .no-links{background:#1e293b}
+body.dark .add-link-btn{background:#1e293b;border-color:#1e3a5f;color:#7dd3fc}
 body.dark .hist-items{border-color:#334155}
 body.dark .hist-item-row{color:#64748b}
 body.dark .hist-item-price{color:#94a3b8}
@@ -410,6 +438,7 @@ let carNotes = {};   // { carId: { text } }
 let view          = 'list';
 let selCarId      = null;
 let serviceItems  = [];
+let links         = {};
 let activeTab  = 'maint';
 let isDark     = localStorage.getItem('cars-dark') === '1';
 let loaded     = 0;
@@ -494,6 +523,10 @@ function loadData() {
   });
   db.ref('cars_notes').on('value', snap => {
     carNotes = snap.val() || {};
+    if (view === 'detail') renderDetail();
+  });
+  db.ref('cars_links').on('value', snap => {
+    links = snap.val() || {};
     if (view === 'detail') renderDetail();
   });
 }
@@ -647,6 +680,30 @@ function renderDetail() {
       <button class="add-exp-btn" onclick="openExpenseModal()">+ הוסף הוצאה</button>
       ${expRows}`;
 
+  } else if (activeTab === 'links') {
+    const carLinks = Object.entries(links[selCarId] || {})
+      .sort((a,b) => (a[1].name||'').localeCompare(b[1].name||''));
+
+    const linkCards = carLinks.length
+      ? carLinks.map(([id, lnk]) => `
+          <div style="position:relative">
+            <a class="link-card" href="${esc(lnk.url||'#')}" target="_blank" rel="noopener">
+              <div class="link-icon">🔗</div>
+              <div class="link-info">
+                <div class="link-name">${esc(lnk.name||'אתר')}</div>
+                <div class="link-url">${esc(lnk.url||'')}</div>
+                ${lnk.note ? `<div class="link-note">${esc(lnk.note)}</div>` : ''}
+              </div>
+            </a>
+            <button class="link-del" style="position:absolute;top:12px;left:8px"
+                    onclick="event.stopPropagation();deleteLink('${id}')">🗑️</button>
+          </div>`).join('')
+      : `<div class="no-links">אין קישורים עדיין<br><span style="font-size:11px">הוסף אתרים שימושיים לרכב הזה</span></div>`;
+
+    tabContent = `
+      <button class="add-link-btn" onclick="openLinkModal()">+ הוסף אתר / קישור</button>
+      ${linkCards}`;
+
   } else { // info
     tabContent = `
       ${car.make  ? `<div class="info-row"><div class="info-label">יצרן</div><div class="info-val">${esc(car.make)}</div></div>` : ''}
@@ -685,6 +742,7 @@ function renderDetail() {
       <div class="tabs">
         <div class="tab ${activeTab==='maint'    ?'active':''}" onclick="switchTab('maint')">🔧 תחזוקה</div>
         <div class="tab ${activeTab==='expenses' ?'active':''}" onclick="switchTab('expenses')">💰 הוצאות</div>
+        <div class="tab ${activeTab==='links'    ?'active':''}" onclick="switchTab('links')">🔗 קישורים</div>
         <div class="tab ${activeTab==='info'     ?'active':''}" onclick="switchTab('info')">ℹ️ פרטים</div>
       </div>
     </div>
@@ -1120,6 +1178,44 @@ function submitExpenseForm() {
 
 function deleteExpense(id) {
   db.ref(`cars_expenses/${id}`).remove();
+}
+
+// ── Links ──
+function openLinkModal() {
+  makeOverlay(`
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">🔗 הוספת קישור</div>
+    <div class="form-group">
+      <label class="form-label">שם האתר</label>
+      <input class="form-input" id="l-name" placeholder="Start My Car, יד2, כל בו..." autofocus>
+    </div>
+    <div class="form-group">
+      <label class="form-label">כתובת URL</label>
+      <input class="form-input" id="l-url" type="url" placeholder="https://...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">הערה (אופציונלי)</label>
+      <input class="form-input" id="l-note" placeholder="מה תמצא שם...">
+    </div>
+    <button class="btn-save" onclick="submitLinkForm()">💾 שמור</button>
+  `);
+}
+
+function submitLinkForm() {
+  const name = document.getElementById('l-name').value.trim();
+  const url  = document.getElementById('l-url').value.trim();
+  const note = document.getElementById('l-note').value.trim();
+  if (!name && !url) return;
+  db.ref(`cars_links/${selCarId}`).push({
+    name: name || url,
+    url:  url  || null,
+    note: note || null,
+  });
+  closeModal();
+}
+
+function deleteLink(id) {
+  db.ref(`cars_links/${selCarId}/${id}`).remove();
 }
 
 function confirmDeleteCar() {

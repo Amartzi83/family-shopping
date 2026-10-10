@@ -47,7 +47,7 @@ async function checkReminders() {
   const messaging = admin.messaging();
   const now       = Date.now();
 
-  const windowStart = now - 30 * 1000;
+  const windowStart = now - 5 * 60 * 1000;   // 5 min back (handles GitHub Actions delays)
   const windowEnd   = now + 5 * 60 * 1000;
 
   const [eventsSnap, tokensSnap, sentSnap] = await Promise.all([
@@ -121,9 +121,15 @@ async function checkReminders() {
     }
   }
 
+  const ilNow = new Intl.DateTimeFormat('he-IL', { timeZone:'Asia/Jerusalem', hour:'2-digit', minute:'2-digit', second:'2-digit' }).format(new Date(now));
+  console.log(`Israel time: ${ilNow}, window: ${new Date(windowStart).toISOString()} → ${new Date(windowEnd).toISOString()}`);
+  console.log(`Events: ${Object.keys(events).length}, FCM members: ${Object.keys(allTokens).join(', ')}`);
+
   if (Object.keys(newSent).length > 0) {
     await db.ref('sent_notifs').update(newSent);
     console.log('Sent:', Object.keys(newSent));
+  } else {
+    console.log('No reminders due in this window');
   }
 
   const threeDaysAgo = now - 3 * 86400000;
@@ -132,7 +138,6 @@ async function checkReminders() {
     .map(([k]) => db.ref(`sent_notifs/${k}`).remove());
 
   await Promise.all([...promises, ...cleanup]);
-  console.log(`Checked ${Object.keys(events).length} events`);
 }
 
 checkReminders().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });

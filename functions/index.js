@@ -42,23 +42,26 @@ function occursOn(ev, dateString) {
   return false;
 }
 
+const db        = admin.database();
+const messaging = admin.messaging();
+
+// Live listeners keep a synced local copy, so polling every 30s costs only the diffs
+const cache = { events: {}, tokens: {}, sent: {} };
+function watch(path, key) {
+  return new Promise(resolve => {
+    db.ref(path).on('value', snap => { cache[key] = snap.val() || {}; resolve(); });
+  });
+}
+
 async function checkReminders() {
-  const db        = admin.database();
-  const messaging = admin.messaging();
-  const now       = Date.now();
+  const now = Date.now();
 
-  const windowStart = now - 5 * 60 * 1000;   // 5 min back (handles GitHub Actions delays)
-  const windowEnd   = now + 5 * 60 * 1000;
+  const windowStart = now - 10 * 60 * 1000;
+  const windowEnd   = now + 30 * 1000;
 
-  const [eventsSnap, tokensSnap, sentSnap] = await Promise.all([
-    db.ref('calendar/events').once('value'),
-    db.ref('fcm_tokens').once('value'),
-    db.ref('sent_notifs').once('value'),
-  ]);
-
-  const events     = eventsSnap.val()  || {};
-  const allTokens  = tokensSnap.val()  || {};
-  const sentNotifs = sentSnap.val()    || {};
+  const events     = cache.events;
+  const allTokens  = cache.tokens;
+  const sentNotifs = cache.sent;
 
   const newSent  = {};
   const promises = [];
@@ -121,15 +124,11 @@ async function checkReminders() {
     }
   }
 
-  const ilNow = new Intl.DateTimeFormat('he-IL', { timeZone:'Asia/Jerusalem', hour:'2-digit', minute:'2-digit', second:'2-digit' }).format(new Date(now));
-  console.log(`Israel time: ${ilNow}, window: ${new Date(windowStart).toISOString()} → ${new Date(windowEnd).toISOString()}`);
-  console.log(`Events: ${Object.keys(events).length}, FCM members: ${Object.keys(allTokens).join(', ')}`);
-
   if (Object.keys(newSent).length > 0) {
+    Object.assign(cache.sent, newSent);
     await db.ref('sent_notifs').update(newSent);
-    console.log('Sent:', Object.keys(newSent));
-  } else {
-    console.log('No reminders due in this window');
+    const ilNow = new Intl.DateTimeFormat('he-IL', { timeZone:'Asia/Jerusalem', hour:'2-digit', minute:'2-digit' }).format(new Date(now));
+    console.log(`${ilNow} Sent:`, Object.keys(newSent));
   }
 
   const threeDaysAgo = now - 3 * 86400000;
@@ -140,4 +139,21 @@ async function checkReminders() {
   await Promise.all([...promises, ...cleanup]);
 }
 
-checkReminders().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+async function main() {
+  await Promise.all([
+    watch('calendar/events', 'events'),
+    watch('fcm_tokens', 'tokens'),
+    watch('sent_notifs', 'sent'),
+  ]);
+  console.log(`Events: ${Object.keys(cache.events).length}, FCM members: ${Object.keys(cache.tokens).join(', ')}`);
+
+  const stopAt = Date.now() + Number(process.env.LOOP_MINUTES || 0) * 60000;
+  do {
+    try { await checkReminders(); } catch (e) { console.error(e); }
+    if (Date.now() >= stopAt) break;
+    await new Promise(r => setTimeout(r, 30000));
+  } while (Date.now() < stopAt);
+  console.log('Loop finished');
+}
+
+main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });

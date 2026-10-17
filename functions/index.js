@@ -96,8 +96,10 @@ async function checkReminders() {
         const notifTitle = ev.title;
         const notifBody  = `${ev.time}${advTxt}`;
 
+        console.log(`"${ev.title}" ${dateString} ${ev.time} adv=${adv} → members: ${ev.members.join(', ')}`);
         for (const member of ev.members) {
           const memberTokens = allTokens[member] || {};
+          if (!Object.keys(memberTokens).length) console.log(`  ${member}: no registered devices`);
           for (const [deviceId, token] of Object.entries(memberTokens)) {
             if (!token || typeof token !== 'string') continue;
 
@@ -109,7 +111,9 @@ async function checkReminders() {
                   notification: { requireInteraction: true, dir: 'rtl', lang: 'he', tag: notifKey, vibrate: [200,100,200] },
                   fcmOptions: { link: `${SITE_URL}/calendar.html` },
                 },
-              }).catch(err => {
+              }).then(id => db.ref(`notif_debug/${notifKey}/${member}_${deviceId}`).set(`OK ${id}`))
+              .catch(err => {
+                db.ref(`notif_debug/${notifKey}/${member}_${deviceId}`).set(`FAILED ${err.code} ${err.message}`);
                 if (
                   err.code === 'messaging/registration-token-not-registered' ||
                   err.code === 'messaging/invalid-registration-token'

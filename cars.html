@@ -382,6 +382,20 @@ body.dark .no-links{background:#1e293b}
 body.dark .add-link-btn{background:#1e293b;border-color:#1e3a5f;color:#7dd3fc}
 body.dark .hist-items{border-color:#334155}
 body.dark .hist-item-row{color:#64748b}
+
+/* ── Backup warning bar ── */
+.backup-warn{
+  background:#fef3c7;border:1px solid #fbbf24;border-radius:12px;
+  padding:11px 14px;font-size:12px;color:#92400e;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:10px;
+}
+.backup-warn-btn{
+  font-size:12px;font-weight:700;color:#92400e;
+  background:#fde68a;border-radius:8px;padding:5px 11px;white-space:nowrap;
+}
+body.dark .backup-warn{background:#3d2a00;border-color:#d97706;color:#fde68a}
+body.dark .backup-warn-btn{background:#78350f;color:#fef3c7}
 body.dark .hist-item-price{color:#94a3b8}
 body.dark .doc-item{background:#134e4a;border-color:#0f766e}
 body.dark .doc-name{color:#5eead4}
@@ -445,6 +459,7 @@ let activeTab  = 'maint';
 let isDark     = localStorage.getItem('cars-dark') === '1';
 let loaded     = 0;
 let uploadingKey  = null;
+let backupToastedThisSession = false;
 
 // ── Helpers ──
 const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
@@ -533,9 +548,51 @@ function loadData() {
   });
 }
 
+// ── Local backup ──
+function saveLocalBackup() {
+  try {
+    localStorage.setItem('cars-backup', JSON.stringify({ cars, maint, expenses, hist }));
+    localStorage.setItem('cars-backup-ts', String(Date.now()));
+    if (!backupToastedThisSession) {
+      backupToastedThisSession = true;
+      toast('✅ גיבוי מקומי עודכן');
+    }
+  } catch(e) {}
+}
+
+function backupWarningHtml() {
+  const ts = parseInt(localStorage.getItem('cars-backup-ts') || '0');
+  if (!ts) return `<div class="backup-warn">⚠️ לא נמצא גיבוי מקומי — מתחבר לשרת...<span style="margin-right:6px"></span></div>`;
+  const ageMs = Date.now() - ts;
+  if (ageMs < 86400000) return '';
+  const days = Math.floor(ageMs / 86400000);
+  return `<div class="backup-warn">
+    ⚠️ גיבוי אחרון לפני ${days} ${days === 1 ? 'יום' : 'ימים'}
+    <button class="backup-warn-btn" onclick="downloadBackup()">⬇ הורד גיבוי</button>
+  </div>`;
+}
+
+function downloadBackup() {
+  if ((loaded & 15) !== 15) { toast('⏳ ממתין לסנכרון...'); return; }
+  const data = { cars, maint, expenses, hist, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cars-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  localStorage.setItem('cars-backup-ts', String(Date.now()));
+  toast('✅ קובץ גיבוי הורד למכשיר');
+  if (view === 'list') renderList();
+}
+
 // ── Render ──
 function render() {
   if ((loaded & 15) !== 15) return;
+  saveLocalBackup();
   if (isDark) document.body.classList.add('dark');
   else document.body.classList.remove('dark');
   if (view === 'list') renderList();
@@ -585,10 +642,14 @@ function renderList() {
       <div class="header-top">
         <button class="header-icon-btn" onclick="location.href='index.html'">🏠</button>
         <div class="header-title">🚗 רכבים משפחתיים</div>
-        <button class="header-icon-btn" onclick="toggleDark()">${isDark?'☀️':'🌙'}</button>
+        <div style="display:flex;gap:4px">
+          <button class="header-icon-btn" title="הורד גיבוי" onclick="downloadBackup()">💾</button>
+          <button class="header-icon-btn" onclick="toggleDark()">${isDark?'☀️':'🌙'}</button>
+        </div>
       </div>
       ${entries.length > 0 ? `<div class="header-sub">${entries.length} רכבים${totalAlerts > 0 ? ` · ⚠️ ${totalAlerts} התראות` : ' · הכל תקין ✓'}</div>` : ''}
     </div>
+    ${backupWarningHtml()}
     <div class="section">${cards}</div>
     <div class="section" style="padding-top:0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">

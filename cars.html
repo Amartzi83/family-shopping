@@ -1326,7 +1326,12 @@ async function handleFileUpload(input) {
     });
     toast('✅ המסמך הועלה בהצלחה');
   } catch(e) {
-    toast('❌ שגיאה בהעלאת המסמך');
+    console.error('Doc upload error:', e);
+    if (e.code === 'storage/unauthorized') {
+      toast('❌ אין הרשאה — עדכן חוקי Firebase Storage');
+    } else {
+      toast('❌ שגיאה: ' + (e.message || e.code || 'לא ידוע'));
+    }
     if (btn) btn.innerHTML = '📎 העלה מסמך / קובץ';
   }
   input.value = '';

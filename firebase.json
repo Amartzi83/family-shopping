@@ -13,5 +13,8 @@
       "*.py",
       "*.js"
     ]
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }
